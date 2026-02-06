@@ -53,8 +53,6 @@ app.add_middleware(
 # but this is simpler for getting started.
 Base.metadata.create_all(bind=engine)
 
-# Register our API routes. This tells FastAPI:
-# "Any request starting with /api/vendors should be handled by the vendors module."
 # Register all API routes. Each line tells FastAPI:
 # "Any request starting with /api/X should be handled by module X."
 # The tags help organize the auto-generated API docs at /docs

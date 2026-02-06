@@ -28,31 +28,28 @@ import VendorDetail from './pages/VendorDetail';
 function App() {
   return (
     <Router>
-      <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      <div className="app-container">
 
         {/* --- NAVIGATION BAR --- */}
-        {/* This shows at the top of every page */}
-        <nav style={{
-          display: 'flex',
-          gap: '20px',
-          padding: '15px 0',
-          borderBottom: '2px solid #e0e0e0',
-          marginBottom: '30px',
-          alignItems: 'center',
-        }}>
-          <Link to="/" style={{ fontSize: '20px', fontWeight: 'bold', textDecoration: 'none', color: '#333' }}>
+        {/* This shows at the top of every page. className="navbar" references
+            the .navbar CSS rule in index.css instead of inline styles.
+            BEFORE: style={{ display: 'flex', gap: '20px', ... }} (messy)
+            AFTER:  className="navbar" (clean -- styles live in CSS file) */}
+        <nav className="navbar">
+          <Link to="/" className="navbar-brand">
             Vendor Management
           </Link>
-          <Link to="/vendors" style={{ textDecoration: 'none', color: '#0066cc' }}>
+          <Link to="/vendors" className="navbar-link">
             All Vendors
           </Link>
-          <Link to="/vendors/new" style={{ textDecoration: 'none', color: '#0066cc' }}>
+          <Link to="/vendors/new" className="navbar-link">
             Add Vendor
           </Link>
         </nav>
 
         {/* --- PAGE ROUTING --- */}
-        {/* React checks the URL and shows the matching component */}
+        {/* React checks the current URL and renders the matching component.
+            :id is a "URL parameter" -- React Router extracts it for us. */}
         <Routes>
           <Route path="/" element={<VendorList />} />
           <Route path="/vendors" element={<VendorList />} />

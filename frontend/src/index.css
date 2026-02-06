@@ -1,0 +1,441 @@
+/*
+ * GLOBAL STYLES
+ * =============
+ * This is a CSS (Cascading Style Sheets) file. CSS controls how things LOOK.
+ *
+ * WHY A SEPARATE CSS FILE?
+ * Before, we had styles scattered as inline style={{}} objects in every component.
+ * That's like writing the dress code on every employee's desk instead of putting
+ * one dress code poster in the hallway. A CSS file is the poster -- one place,
+ * everyone follows it.
+ *
+ * HOW CSS WORKS:
+ * Each rule has a "selector" (what to style) and "declarations" (how to style it):
+ *   .btn-primary {           <-- selector: anything with class="btn-primary"
+ *     background-color: blue; <-- declaration: make background blue
+ *   }
+ */
+
+/* --- BASE STYLES --- */
+/* These apply to ALL elements on the page */
+
+* {
+  box-sizing: border-box;  /* Makes width/padding calculations intuitive */
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  color: #333;
+  background-color: #f5f7fa;
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+/* --- LAYOUT --- */
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;        /* Centers the container horizontally */
+  padding: 20px;
+}
+
+/* --- NAVIGATION BAR --- */
+
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 32px;
+}
+
+.navbar-brand {
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #1a1a2e;
+}
+
+.navbar-link {
+  text-decoration: none;
+  color: #0066cc;
+  font-weight: 500;
+}
+
+.navbar-link:hover {
+  text-decoration: underline;
+}
+
+/* --- BUTTONS --- */
+/* Reusable button styles. "btn" is the base, modifiers add color. */
+
+.btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: opacity 0.15s;  /* Smooth fade on hover */
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+.btn-primary {
+  background-color: #0066cc;
+  color: white;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.btn-sm {
+  padding: 4px 12px;
+  font-size: 13px;
+}
+
+.btn-lg {
+  padding: 12px 28px;
+  font-size: 16px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- PAGE HEADER --- */
+/* The title row with a heading on the left and a button on the right */
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #1a1a2e;
+}
+
+/* --- TABLE --- */
+/* For the vendor list and other data tables */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.data-table th {
+  text-align: left;
+  padding: 14px 16px;
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #555;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f8f9ff;  /* Subtle highlight on hover */
+}
+
+.data-table a {
+  color: #0066cc;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.data-table a:hover {
+  text-decoration: underline;
+}
+
+/* --- STATUS BADGE --- */
+/* The colored pill that shows "active", "pending", etc. */
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+  display: inline-block;
+}
+
+.status-active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-approved {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-inactive {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+/* --- CARDS --- */
+/* For the detail page sections */
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #1a1a2e;
+  font-size: 16px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.detail-field {
+  margin-bottom: 12px;
+}
+
+.detail-field strong {
+  color: #666;
+  font-size: 13px;
+}
+
+.detail-field span {
+  display: block;
+  margin-top: 2px;
+  color: #333;
+}
+
+/* --- FORMS --- */
+
+.form-container {
+  max-width: 700px;
+}
+
+.form-section {
+  margin-bottom: 8px;
+}
+
+.form-section h3 {
+  color: #1a1a2e;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #444;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* --- ALERTS --- */
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+/* --- SEARCH & FILTER BAR --- */
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 280px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+}
+
+.vendor-count {
+  margin-left: auto;
+  color: #888;
+  font-size: 14px;
+}
+
+/* --- EMPTY STATE --- */
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+/* --- LOADING --- */
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 16px;
+}
+
+/* --- TIMESTAMP --- */
+
+.timestamps {
+  margin-top: 20px;
+  color: #888;
+  font-size: 13px;
+}
+
+.timestamps p {
+  margin: 4px 0;
+}
+
+/* --- LINK STYLES --- */
+
+.back-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.text-link {
+  color: #0066cc;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+}
+
+.text-danger {
+  color: #dc3545;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}

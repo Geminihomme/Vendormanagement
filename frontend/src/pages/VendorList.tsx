@@ -3,18 +3,24 @@
  *
  * WHAT IT DOES:
  * Shows a table of all vendors. This is the main "dashboard" page.
- * Users can see all vendors at a glance, click to view details,
- * or delete a vendor.
+ * Users can search by name, filter by status, and see a count of results.
  *
- * KEY REACT CONCEPTS USED HERE:
+ * KEY REACT CONCEPTS:
  *
- * 1. useState: Stores data that can change (like the list of vendors).
- *    When the data changes, React automatically re-renders the page.
+ * 1. useState: Stores data that can change. When state changes,
+ *    React automatically re-renders (repaints) the page.
+ *    Think of it like a whiteboard -- erase and redraw when data changes.
  *
  * 2. useEffect: Runs code when the component first appears on screen.
  *    We use it to fetch vendors from the backend when the page loads.
  *
- * 3. Conditional rendering: Showing different things based on state
+ * 3. DERIVED STATE (new concept!):
+ *    Instead of storing "filtered vendors" in a separate useState,
+ *    we COMPUTE them from the existing state every render.
+ *    This is called "derived state" -- data calculated from other data.
+ *    It's simpler and can't get out of sync.
+ *
+ * 4. Conditional rendering: Showing different things based on state
  *    (loading spinner vs. data vs. error message).
  */
 
@@ -23,16 +29,42 @@ import { Link } from 'react-router-dom';
 import { Vendor } from '../types/vendor';
 import { getVendors, deleteVendor } from '../services/api';
 
+// Helper: maps a status string to a CSS class name.
+// e.g., "active" -> "status-active" which matches our CSS rule.
+function statusClass(status: string): string {
+  const map: Record<string, string> = {
+    active: 'status-active',
+    approved: 'status-approved',
+    pending: 'status-pending',
+    rejected: 'status-rejected',
+    inactive: 'status-inactive',
+  };
+  return map[status] || 'status-inactive';
+}
+
 function VendorList() {
   // --- STATE ---
-  // Think of state as "variables that React watches."
-  // When these change, the page automatically updates.
-  const [vendors, setVendors] = useState<Vendor[]>([]);  // The list of vendors
-  const [loading, setLoading] = useState(true);           // Are we still loading?
-  const [error, setError] = useState<string | null>(null); // Any error message
+  // These are the "live variables" React watches. When they change,
+  // React repaints the relevant parts of the page automatically.
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');       // Text in the search box
+  const [statusFilter, setStatusFilter] = useState('');   // Selected status filter
 
-  // --- LOAD DATA ON PAGE OPEN ---
-  // useEffect with [] runs ONCE when the component first appears.
+  // --- DERIVED STATE ---
+  // We don't store filtered vendors separately. We compute them on every render.
+  // This is SIMPLER and guarantees filtered results are always in sync with
+  // the search term and status filter.
+  const filteredVendors = vendors.filter((vendor) => {
+    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase())
+      || vendor.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === '' || vendor.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // --- LOAD DATA ---
+  // useEffect with [] runs ONCE when the component first mounts (appears).
   useEffect(() => {
     loadVendors();
   }, []);
@@ -40,7 +72,7 @@ function VendorList() {
   async function loadVendors() {
     try {
       setLoading(true);
-      const data = await getVendors();  // Calls our API service
+      const data = await getVendors();
       setVendors(data);
       setError(null);
     } catch (err) {
@@ -51,107 +83,128 @@ function VendorList() {
   }
 
   async function handleDelete(id: number, name: string) {
-    // Confirm before deleting -- prevents accidental clicks
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) {
       return;
     }
     try {
       await deleteVendor(id);
-      // Remove the vendor from our local list without re-fetching
       setVendors(vendors.filter(v => v.id !== id));
     } catch (err) {
       setError('Failed to delete vendor.');
     }
   }
 
-  // --- RENDER ---
-  // Show loading state
+  // --- RENDER: LOADING STATE ---
   if (loading) {
-    return <p>Loading vendors...</p>;
+    return <div className="loading">Loading vendors...</div>;
   }
 
-  // Show error state
+  // --- RENDER: ERROR STATE ---
   if (error) {
     return (
       <div>
-        <p style={{ color: 'red' }}>{error}</p>
-        <button onClick={loadVendors}>Try Again</button>
+        <div className="alert alert-error">{error}</div>
+        <button className="btn btn-primary" onClick={loadVendors}>Try Again</button>
       </div>
     );
   }
 
-  // Show the vendor table
+  // --- RENDER: THE PAGE ---
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      {/* Page header: title on left, "Add Vendor" button on right */}
+      <div className="page-header">
         <h1>Vendors</h1>
-        <Link
-          to="/vendors/new"
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#0066cc',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: '5px',
-          }}
-        >
+        <Link to="/vendors/new" className="btn btn-primary">
           + Add Vendor
         </Link>
       </div>
 
+      {/* Search & Filter toolbar
+          NEW CONCEPT: "Controlled inputs"
+          The search box value is controlled by React state (searchTerm).
+          Every keystroke updates the state, which re-filters the list instantly.
+          This is why typing in the search box filters results in real-time. */}
+      {vendors.length > 0 && (
+        <div className="toolbar">
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            className="search-input"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <select
+            className="filter-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <span className="vendor-count">
+            Showing {filteredVendors.length} of {vendors.length} vendors
+          </span>
+        </div>
+      )}
+
+      {/* Empty state -- when there are no vendors at all */}
       {vendors.length === 0 ? (
-        <p>No vendors yet. Click "Add Vendor" to create your first one.</p>
+        <div className="empty-state">
+          <p>No vendors yet. Add your first vendor to get started.</p>
+          <Link to="/vendors/new" className="btn btn-primary btn-lg">
+            + Add Your First Vendor
+          </Link>
+        </div>
+      ) : filteredVendors.length === 0 ? (
+        /* No results matching the search/filter */
+        <div className="empty-state">
+          <p>No vendors match your search.</p>
+          <button
+            className="btn btn-secondary"
+            onClick={() => { setSearchTerm(''); setStatusFilter(''); }}
+          >
+            Clear Filters
+          </button>
+        </div>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        /* The vendor table */
+        <table className="data-table">
           <thead>
-            <tr style={{ borderBottom: '2px solid #e0e0e0', textAlign: 'left' }}>
-              <th style={{ padding: '12px 8px' }}>Name</th>
-              <th style={{ padding: '12px 8px' }}>Category</th>
-              <th style={{ padding: '12px 8px' }}>Email</th>
-              <th style={{ padding: '12px 8px' }}>Status</th>
-              <th style={{ padding: '12px 8px' }}>Actions</th>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {vendors.map((vendor) => (
-              <tr key={vendor.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 8px' }}>
-                  <Link to={`/vendors/${vendor.id}`} style={{ color: '#0066cc' }}>
+            {filteredVendors.map((vendor) => (
+              <tr key={vendor.id}>
+                <td>
+                  <Link to={`/vendors/${vendor.id}`}>
                     {vendor.name}
                   </Link>
                 </td>
-                <td style={{ padding: '12px 8px' }}>{vendor.category || '—'}</td>
-                <td style={{ padding: '12px 8px' }}>{vendor.email}</td>
-                <td style={{ padding: '12px 8px' }}>
-                  <span style={{
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    backgroundColor: vendor.status === 'active' ? '#d4edda' :
-                                     vendor.status === 'approved' ? '#cce5ff' :
-                                     vendor.status === 'pending' ? '#fff3cd' :
-                                     vendor.status === 'rejected' ? '#f8d7da' : '#e2e3e5',
-                    color: vendor.status === 'active' ? '#155724' :
-                           vendor.status === 'approved' ? '#004085' :
-                           vendor.status === 'pending' ? '#856404' :
-                           vendor.status === 'rejected' ? '#721c24' : '#383d41',
-                  }}>
+                <td>{vendor.category || '—'}</td>
+                <td>{vendor.email}</td>
+                <td>
+                  <span className={`status-badge ${statusClass(vendor.status)}`}>
                     {vendor.status}
                   </span>
                 </td>
-                <td style={{ padding: '12px 8px' }}>
-                  <Link to={`/vendors/${vendor.id}/edit`} style={{ marginRight: '10px', color: '#0066cc' }}>
+                <td>
+                  <Link to={`/vendors/${vendor.id}/edit`} className="text-link" style={{ marginRight: '12px' }}>
                     Edit
                   </Link>
                   <button
                     onClick={() => handleDelete(vendor.id, vendor.name)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#cc0000',
-                      cursor: 'pointer',
-                    }}
+                    className="text-link text-danger"
                   >
                     Delete
                   </button>

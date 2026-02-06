@@ -3,32 +3,42 @@
  *
  * WHAT IT DOES:
  * A form for creating a new vendor OR editing an existing one.
- * The same component handles both cases -- this is called "component reuse."
+ * The same component handles both -- this is called "component reuse."
  *
  * HOW IT KNOWS WHICH MODE:
- * - URL is /vendors/new -> no ID in URL -> CREATE mode
- * - URL is /vendors/42/edit -> ID is 42 -> EDIT mode (loads existing data first)
+ * - URL is /vendors/new     -> no ID in URL -> CREATE mode
+ * - URL is /vendors/42/edit -> ID is 42     -> EDIT mode (loads existing data)
  *
- * KEY CONCEPTS:
- * - Controlled inputs: React controls the form field values through state.
- *   Every keystroke updates state, and state drives what's displayed.
- *   This gives us full control over validation and formatting.
+ * WALKTHROUGH: WHAT HAPPENS WHEN YOU CLICK "CREATE VENDOR":
  *
- * - Form submission: When the user clicks "Save", we call either
- *   createVendor() or updateVendor() from our API service.
+ *   1. User fills out form fields (each keystroke updates React state)
+ *   2. User clicks "Create Vendor" button
+ *   3. handleSubmit() fires, which:
+ *      a. Prevents the browser from reloading the page
+ *      b. Validates required fields (name, email)
+ *      c. Calls createVendor() from api.ts
+ *   4. api.ts sends HTTP POST to http://localhost:8000/api/vendors/
+ *   5. Backend validates data, saves to PostgreSQL, returns new vendor
+ *   6. On success, React navigates to /vendors (the list page)
+ *   7. VendorList loads and shows the new vendor in the table
+ *
+ * KEY CONCEPT - CONTROLLED INPUTS:
+ * Every form field's value is stored in React state (formData).
+ * Every keystroke calls handleChange() which updates state.
+ * React then re-renders the input with the new value.
+ * This gives us full control: we can validate, format, or block input.
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { VendorCreate } from '../types/vendor';
 import { createVendor, getVendor, updateVendor } from '../services/api';
 
 function VendorForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isEditing = Boolean(id);  // true if URL has an ID
+  const isEditing = Boolean(id);
 
-  // Form state: each field gets its own state variable
   const [formData, setFormData] = useState<VendorCreate>({
     name: '',
     email: '',
@@ -46,6 +56,7 @@ function VendorForm() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   // If editing, load the existing vendor data into the form
   useEffect(() => {
@@ -77,17 +88,25 @@ function VendorForm() {
   }, [id]);
 
   // Handle form field changes.
-  // This single function works for ALL text inputs.
+  // This SINGLE function handles ALL inputs. It reads the input's "name"
+  // attribute and updates the matching key in formData.
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear any previous error when the user starts typing
+    if (error) setError(null);
   }
 
   // Handle form submission
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();  // Prevent the browser's default form submission (page reload)
+    // e.preventDefault() stops the browser from reloading the page.
+    // Without this, the browser would do a traditional form POST
+    // and our React app would restart from scratch.
+    e.preventDefault();
 
-    // Basic validation
+    // --- VALIDATION ---
+    // Check required fields before sending to the backend.
+    // The backend also validates, but checking here gives instant feedback.
     if (!formData.name.trim()) {
       setError('Vendor name is required.');
       return;
@@ -103,11 +122,14 @@ function VendorForm() {
 
       if (isEditing) {
         await updateVendor(Number(id), formData);
+        setSuccess('Vendor updated successfully!');
       } else {
         await createVendor(formData);
+        setSuccess('Vendor created successfully!');
       }
 
-      navigate('/vendors');  // Go back to the list on success
+      // Brief pause so the user sees the success message, then navigate
+      setTimeout(() => navigate('/vendors'), 800);
     } catch (err) {
       setError(`Failed to ${isEditing ? 'update' : 'create'} vendor. Please try again.`);
     } finally {
@@ -115,10 +137,11 @@ function VendorForm() {
     }
   }
 
-  // A helper to make form fields less repetitive
+  // Helper: generates a form input field.
+  // This avoids repeating the same HTML structure for every field.
   const inputField = (label: string, name: string, required = false, type = 'text') => (
-    <div style={{ marginBottom: '16px' }}>
-      <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+    <div className="form-group">
+      <label>
         {label}{required && ' *'}
       </label>
       <input
@@ -127,122 +150,83 @@ function VendorForm() {
         value={(formData as Record<string, string>)[name] || ''}
         onChange={handleChange}
         required={required}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          fontSize: '14px',
-          boxSizing: 'border-box',
-        }}
       />
     </div>
   );
 
   return (
-    <div style={{ maxWidth: '700px' }}>
-      <h1>{isEditing ? 'Edit Vendor' : 'Add New Vendor'}</h1>
+    <div className="form-container">
+      <div className="page-header">
+        <h1>{isEditing ? 'Edit Vendor' : 'Add New Vendor'}</h1>
+      </div>
 
-      {error && (
-        <div style={{ padding: '12px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '20px' }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="alert alert-error">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
 
       <form onSubmit={handleSubmit}>
-        <h3>Basic Information</h3>
-        {inputField('Company Name', 'name', true)}
-        {inputField('Email', 'email', true, 'email')}
-        {inputField('Phone', 'phone')}
-        {inputField('Website', 'website', false, 'url')}
-
-        <h3>Business Details</h3>
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Category</label>
-          <select
-            name="category"
-            value={formData.category || ''}
-            onChange={handleChange}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              fontSize: '14px',
-            }}
-          >
-            <option value="">Select a category</option>
-            <option value="IT Services">IT Services</option>
-            <option value="Office Supplies">Office Supplies</option>
-            <option value="Professional Services">Professional Services</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Facilities">Facilities</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        {inputField('Tax ID', 'tax_id')}
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Description</label>
-          <textarea
-            name="description"
-            value={formData.description || ''}
-            onChange={handleChange}
-            rows={4}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              fontSize: '14px',
-              boxSizing: 'border-box',
-            }}
-          />
+        {/* --- BASIC INFORMATION --- */}
+        <div className="form-section">
+          <h3>Basic Information</h3>
+          {inputField('Company Name', 'name', true)}
+          {inputField('Email', 'email', true, 'email')}
+          {inputField('Phone', 'phone')}
+          {inputField('Website', 'website', false, 'url')}
         </div>
 
-        <h3>Address</h3>
-        {inputField('Street Address', 'address')}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {inputField('City', 'city')}
-          {inputField('State', 'state')}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {inputField('Zip Code', 'zip_code')}
-          {inputField('Country', 'country')}
+        {/* --- BUSINESS DETAILS --- */}
+        <div className="form-section">
+          <h3>Business Details</h3>
+          <div className="form-group">
+            <label>Category</label>
+            <select
+              name="category"
+              value={formData.category || ''}
+              onChange={handleChange}
+            >
+              <option value="">Select a category</option>
+              <option value="IT Services">IT Services</option>
+              <option value="Office Supplies">Office Supplies</option>
+              <option value="Professional Services">Professional Services</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Facilities">Facilities</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          {inputField('Tax ID', 'tax_id')}
+
+          <div className="form-group">
+            <label>Description</label>
+            <textarea
+              name="description"
+              value={formData.description || ''}
+              onChange={handleChange}
+              rows={4}
+            />
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              padding: '10px 24px',
-              backgroundColor: '#0066cc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              fontSize: '16px',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.7 : 1,
-            }}
-          >
+        {/* --- ADDRESS --- */}
+        <div className="form-section">
+          <h3>Address</h3>
+          {inputField('Street Address', 'address')}
+          <div className="form-row">
+            {inputField('City', 'city')}
+            {inputField('State', 'state')}
+          </div>
+          <div className="form-row">
+            {inputField('Zip Code', 'zip_code')}
+            {inputField('Country', 'country')}
+          </div>
+        </div>
+
+        {/* --- SUBMIT BUTTONS --- */}
+        <div className="form-actions">
+          <button type="submit" disabled={saving} className="btn btn-primary btn-lg">
             {saving ? 'Saving...' : (isEditing ? 'Update Vendor' : 'Create Vendor')}
           </button>
-          <button
-            type="button"
-            onClick={() => navigate('/vendors')}
-            style={{
-              padding: '10px 24px',
-              backgroundColor: '#e0e0e0',
-              color: '#333',
-              border: 'none',
-              borderRadius: '5px',
-              fontSize: '16px',
-              cursor: 'pointer',
-            }}
-          >
+          <Link to="/vendors" className="btn btn-secondary btn-lg">
             Cancel
-          </button>
+          </Link>
         </div>
       </form>
     </div>
