@@ -18,7 +18,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
-from app.api import vendors
+from app.api import vendors, users, contracts
+
+# Import all models so SQLAlchemy knows about them when creating tables.
+# Without these imports, the users and contracts tables wouldn't be created.
+import app.models.vendor     # noqa: F401
+import app.models.user       # noqa: F401
+import app.models.contract   # noqa: F401
 
 # Create the FastAPI application.
 # This is our "app" - the central object that everything connects to.
@@ -49,7 +55,12 @@ Base.metadata.create_all(bind=engine)
 
 # Register our API routes. This tells FastAPI:
 # "Any request starting with /api/vendors should be handled by the vendors module."
+# Register all API routes. Each line tells FastAPI:
+# "Any request starting with /api/X should be handled by module X."
+# The tags help organize the auto-generated API docs at /docs
 app.include_router(vendors.router, prefix="/api/vendors", tags=["vendors"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(contracts.router, prefix="/api/contracts", tags=["contracts"])
 
 
 @app.get("/")

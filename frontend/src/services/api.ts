@@ -24,6 +24,8 @@
 
 import axios from 'axios';
 import { Vendor, VendorCreate, VendorUpdate } from '../types/vendor';
+import { User, UserCreate, UserUpdate } from '../types/user';
+import { Contract, ContractCreate, ContractUpdate } from '../types/contract';
 
 // The base URL of our backend API.
 // In development, the backend runs on port 8000.
@@ -62,4 +64,61 @@ export async function updateVendor(id: number, vendor: VendorUpdate): Promise<Ve
 
 export async function deleteVendor(id: number): Promise<void> {
   await api.delete(`/api/vendors/${id}`);
+}
+
+// --- USER API FUNCTIONS ---
+
+export async function getUsers(): Promise<User[]> {
+  const response = await api.get<User[]>('/api/users/');
+  return response.data;
+}
+
+export async function getUser(id: number): Promise<User> {
+  const response = await api.get<User>(`/api/users/${id}`);
+  return response.data;
+}
+
+export async function createUser(user: UserCreate): Promise<User> {
+  const response = await api.post<User>('/api/users/', user);
+  return response.data;
+}
+
+export async function updateUser(id: number, user: UserUpdate): Promise<User> {
+  const response = await api.put<User>(`/api/users/${id}`, user);
+  return response.data;
+}
+
+export async function deleteUser(id: number): Promise<void> {
+  await api.delete(`/api/users/${id}`);
+}
+
+// --- CONTRACT API FUNCTIONS ---
+
+export async function getContracts(): Promise<Contract[]> {
+  const response = await api.get<Contract[]>('/api/contracts/');
+  return response.data;
+}
+
+export async function getContract(id: number): Promise<Contract> {
+  const response = await api.get<Contract>(`/api/contracts/${id}`);
+  return response.data;
+}
+
+export async function createContract(contract: ContractCreate): Promise<Contract> {
+  const response = await api.post<Contract>('/api/contracts/', contract);
+  return response.data;
+}
+
+export async function updateContract(id: number, contract: ContractUpdate): Promise<Contract> {
+  const response = await api.put<Contract>(`/api/contracts/${id}`, contract);
+  return response.data;
+}
+
+export async function deleteContract(id: number): Promise<void> {
+  await api.delete(`/api/contracts/${id}`);
+}
+
+export async function getVendorContracts(vendorId: number): Promise<Contract[]> {
+  const response = await api.get<Contract[]>(`/api/contracts/vendor/${vendorId}`);
+  return response.data;
 }

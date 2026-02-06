@@ -26,7 +26,8 @@ This model is used by:
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Text, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy.orm import relationship
 import enum
 
 from app.database import Base
@@ -88,3 +89,12 @@ class Vendor(Base):
     # Timestamps: automatically track when records are created and updated
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # --- RELATIONSHIP ---
+    # This doesn't create a database column. It tells SQLAlchemy:
+    # "When I load a vendor, also let me access their contracts easily."
+    # Example: vendor.contracts gives you a list of all contracts for this vendor.
+    #
+    # back_populates="vendor" means: on the Contract side, contract.vendor
+    # gives you back this Vendor object. They point to each other.
+    contracts = relationship("Contract", back_populates="vendor")
