@@ -15,20 +15,47 @@ Browser -> main.py (routes request) -> api/vendors.py (handles it) -> database
 """
 
 import os
+import logging
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+# Set up logging so background jobs can print messages.
+# Think of logging as the app writing in its diary -- helpful for debugging.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
 from app.database import engine, Base
-from app.api import vendors, users, contracts
+from app.api import vendors, users, contracts, notifications
 
 # Import all models so SQLAlchemy knows about them when creating tables.
-# Without these imports, the users and contracts tables wouldn't be created.
-import app.models.vendor     # noqa: F401
-import app.models.user       # noqa: F401
-import app.models.contract   # noqa: F401
+# Without these imports, the tables wouldn't be created.
+import app.models.vendor       # noqa: F401
+import app.models.user         # noqa: F401
+import app.models.contract     # noqa: F401
+import app.models.notification # noqa: F401
+
+# LIFESPAN: What happens when the app starts up and shuts down.
+# This is where we start and stop the background scheduler.
+# Think of it as the "opening" and "closing" procedures for a store:
+# - Opening: turn on lights, unlock doors, START THE SCHEDULER
+# - Closing: lock doors, turn off lights, STOP THE SCHEDULER
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Runs on app startup and shutdown."""
+    # --- STARTUP ---
+    from app.scheduler import start_scheduler
+    start_scheduler()
+    yield
+    # --- SHUTDOWN ---
+    from app.scheduler import stop_scheduler
+    stop_scheduler()
+
 
 # Create the FastAPI application.
 # This is our "app" - the central object that everything connects to.
@@ -36,6 +63,7 @@ app = FastAPI(
     title="Vendor Management Platform",
     description="API for managing vendors, contracts, and compliance",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS = Cross-Origin Resource Sharing.
@@ -63,6 +91,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(vendors.router, prefix="/api/vendors", tags=["vendors"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(contracts.router, prefix="/api/contracts", tags=["contracts"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
 
 # Serve uploaded files (PDFs, etc.) as static files.
 # When someone visits /uploads/contracts/abc123.pdf, FastAPI serves the file

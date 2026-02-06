@@ -25,6 +25,7 @@ import VendorList from './pages/VendorList';
 import VendorForm from './pages/VendorForm';
 import VendorDetail from './pages/VendorDetail';
 import ContractForm from './pages/ContractForm';
+import RenewalsDashboard from './pages/RenewalsDashboard';
 
 function App() {
   return (
@@ -46,6 +47,9 @@ function App() {
           <Link to="/vendors/new" className="navbar-link">
             Add Vendor
           </Link>
+          <Link to="/renewals" className="navbar-link">
+            Renewals
+          </Link>
         </nav>
 
         {/* --- PAGE ROUTING --- */}
@@ -58,6 +62,7 @@ function App() {
           <Route path="/vendors/:id" element={<VendorDetail />} />
           <Route path="/vendors/:id/edit" element={<VendorForm />} />
           <Route path="/vendors/:vendorId/contracts/new" element={<ContractForm />} />
+          <Route path="/renewals" element={<RenewalsDashboard />} />
         </Routes>
       </div>
     </Router>

@@ -26,6 +26,7 @@ import axios from 'axios';
 import { Vendor, VendorCreate, VendorUpdate } from '../types/vendor';
 import { User, UserCreate, UserUpdate } from '../types/user';
 import { Contract, ContractCreate, ContractUpdate } from '../types/contract';
+import { UpcomingRenewal, Notification, CheckNowResponse } from '../types/notification';
 
 // The base URL of our backend API.
 // In development, the backend runs on port 8000.
@@ -137,6 +138,34 @@ export async function getVendorContracts(vendorId: number): Promise<Contract[]> 
  * automatically adds it with the correct "boundary" string that
  * separates the different parts of the form data.
  */
+// --- NOTIFICATION & RENEWAL API FUNCTIONS ---
+
+export async function getUpcomingRenewals(): Promise<UpcomingRenewal[]> {
+  const response = await api.get<UpcomingRenewal[]>('/api/notifications/upcoming-renewals');
+  return response.data;
+}
+
+export async function getNotifications(unreadOnly: boolean = false): Promise<Notification[]> {
+  const response = await api.get<Notification[]>('/api/notifications/', {
+    params: { unread_only: unreadOnly },
+  });
+  return response.data;
+}
+
+export async function getUnreadCount(): Promise<number> {
+  const response = await api.get<{ unread_count: number }>('/api/notifications/unread-count');
+  return response.data.unread_count;
+}
+
+export async function markNotificationsRead(notificationIds: number[]): Promise<void> {
+  await api.post('/api/notifications/mark-read', { notification_ids: notificationIds });
+}
+
+export async function triggerExpiryCheck(): Promise<CheckNowResponse> {
+  const response = await api.post<CheckNowResponse>('/api/notifications/check-now');
+  return response.data;
+}
+
 export async function uploadContractDocument(contractId: number, file: File): Promise<Contract> {
   const formData = new FormData();
   formData.append('file', file);

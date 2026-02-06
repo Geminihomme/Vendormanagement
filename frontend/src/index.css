@@ -464,3 +464,208 @@ body {
   padding: 6px 12px;
   border-radius: 4px;
 }
+
+/* --- DASHBOARD: SUMMARY STAT CARDS --- */
+/* The row of colored cards at the top of the Renewals Dashboard */
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-top: 4px solid #e0e0e0;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.stat-expired { border-top-color: #dc3545; }
+.stat-expired .stat-number { color: #dc3545; }
+
+.stat-critical { border-top-color: #e83e8c; }
+.stat-critical .stat-number { color: #e83e8c; }
+
+.stat-warning { border-top-color: #fd7e14; }
+.stat-warning .stat-number { color: #fd7e14; }
+
+.stat-attention { border-top-color: #0066cc; }
+.stat-attention .stat-number { color: #0066cc; }
+
+.stat-total { border-top-color: #28a745; }
+.stat-total .stat-number { color: #28a745; }
+
+/* --- DASHBOARD: TAB BAR --- */
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-btn {
+  padding: 10px 24px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: #333;
+}
+
+.tab-active {
+  color: #0066cc;
+  border-bottom-color: #0066cc;
+}
+
+.notification-badge {
+  display: inline-block;
+  background: #dc3545;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: 6px;
+}
+
+/* --- DASHBOARD: URGENCY BADGES --- */
+
+.urgency-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.urgency-badge-expired {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.urgency-badge-critical {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.urgency-badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.urgency-badge-attention {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.urgency-badge-normal {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+/* --- DASHBOARD: TABLE ROW HINTS --- */
+
+.urgency-row.urgency-expired td:first-child,
+.urgency-row.urgency-critical td:first-child {
+  border-left: 3px solid #dc3545;
+}
+
+.urgency-row.urgency-warning td:first-child {
+  border-left: 3px solid #fd7e14;
+}
+
+.urgency-row.urgency-attention td:first-child {
+  border-left: 3px solid #0066cc;
+}
+
+.urgency-row.urgency-normal td:first-child {
+  border-left: 3px solid #28a745;
+}
+
+/* Days remaining color coding */
+.days-expired, .days-critical { color: #dc3545; }
+.days-warning { color: #fd7e14; }
+.days-attention { color: #0066cc; }
+.days-normal { color: #28a745; }
+
+.text-muted {
+  color: #888;
+  font-size: 12px;
+}
+
+/* --- DASHBOARD: NOTIFICATION LIST --- */
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notification-item {
+  background: white;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-left: 3px solid #e0e0e0;
+}
+
+.notification-unread {
+  border-left-color: #0066cc;
+  background: #f8f9ff;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #888;
+}
+
+.notification-message {
+  font-size: 14px;
+  color: #333;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.notification-footer {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.notification-email-sent {
+  color: #28a745;
+  font-size: 12px;
+}
