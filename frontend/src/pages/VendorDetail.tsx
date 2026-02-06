@@ -25,7 +25,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Vendor } from '../types/vendor';
 import { Contract } from '../types/contract';
-import { getVendor, deleteVendor, getVendorContracts } from '../services/api';
+import { getVendor, deleteVendor, getVendorContracts, deleteContract } from '../services/api';
+
+// Build the full URL for downloading uploaded documents.
+// document_url from the backend is a relative path like "/uploads/contracts/abc.pdf"
+// We need to prepend the backend base URL so the browser can fetch it.
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 // Maps a status string to a CSS class name
 function statusClass(status: string): string {
@@ -151,36 +156,82 @@ function VendorDetail() {
       </div>
 
       {/* --- CONTRACTS SECTION ---
-          NEW: This shows all contracts linked to this vendor.
-          It uses the data from getVendorContracts() above. */}
+          Shows all contracts linked to this vendor.
+          Includes: Add button, download links, delete buttons. */}
       <div style={{ marginTop: '32px' }}>
-        <h2>Contracts ({contracts.length})</h2>
+        <div className="page-header">
+          <h2 style={{ margin: 0 }}>Contracts ({contracts.length})</h2>
+          <Link to={`/vendors/${vendor.id}/contracts/new`} className="btn btn-primary btn-sm">
+            + Add Contract
+          </Link>
+        </div>
+
         {contracts.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', color: '#888' }}>
+          <div className="card" style={{ textAlign: 'center', color: '#888', marginTop: '12px' }}>
             <p>No contracts with this vendor yet.</p>
+            <Link to={`/vendors/${vendor.id}/contracts/new`} className="btn btn-primary">
+              + Add First Contract
+            </Link>
           </div>
         ) : (
-          <table className="data-table">
+          <table className="data-table" style={{ marginTop: '12px' }}>
             <thead>
               <tr>
                 <th>Title</th>
                 <th>Value</th>
-                <th>Start Date</th>
-                <th>End Date</th>
+                <th>Dates</th>
                 <th>Status</th>
+                <th>Document</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {contracts.map((contract) => (
                 <tr key={contract.id}>
-                  <td>{contract.title}</td>
+                  <td>
+                    <strong>{contract.title}</strong>
+                    {contract.contract_number && (
+                      <div style={{ fontSize: '12px', color: '#888' }}>{contract.contract_number}</div>
+                    )}
+                  </td>
                   <td>{contract.value ? `$${contract.value.toLocaleString()}` : '—'}</td>
-                  <td>{contract.start_date || '—'}</td>
-                  <td>{contract.end_date || '—'}</td>
+                  <td style={{ fontSize: '13px' }}>
+                    {contract.start_date || '—'} to {contract.end_date || '—'}
+                  </td>
                   <td>
                     <span className={`status-badge ${statusClass(contract.status)}`}>
                       {contract.status}
                     </span>
+                  </td>
+                  <td>
+                    {contract.document_url ? (
+                      <a
+                        href={`${API_BASE}${contract.document_url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-link"
+                      >
+                        Download
+                      </a>
+                    ) : (
+                      <span style={{ color: '#999', fontSize: '13px' }}>None</span>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm(`Delete contract "${contract.title}"?`)) return;
+                        try {
+                          await deleteContract(contract.id);
+                          setContracts(contracts.filter(c => c.id !== contract.id));
+                        } catch {
+                          setError('Failed to delete contract.');
+                        }
+                      }}
+                      className="text-link text-danger"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

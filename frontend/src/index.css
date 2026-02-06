@@ -439,3 +439,28 @@ body {
 .text-link:hover {
   text-decoration: underline;
 }
+
+/* --- FILE UPLOAD --- */
+
+.file-input {
+  padding: 8px;
+  border: 2px dashed #ccc;
+  border-radius: 6px;
+  background: #fafafa;
+  cursor: pointer;
+  width: 100%;
+}
+
+.file-input:hover {
+  border-color: #0066cc;
+  background: #f0f7ff;
+}
+
+.file-selected {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #155724;
+  background: #d4edda;
+  padding: 6px 12px;
+  border-radius: 4px;
+}

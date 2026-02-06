@@ -8,3 +8,4 @@ psycopg2-binary==2.9.9  # The "driver" that connects Python to PostgreSQL
 pydantic==2.5.3         # Validates data (makes sure a phone number looks like a phone number)
 alembic==1.13.1         # Manages database changes over time (called "migrations")
 python-dotenv==1.0.0    # Reads configuration from .env files
+python-multipart==0.0.6 # Handles file uploads (multipart/form-data parsing)

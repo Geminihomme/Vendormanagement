@@ -122,3 +122,35 @@ export async function getVendorContracts(vendorId: number): Promise<Contract[]> 
   const response = await api.get<Contract[]>(`/api/contracts/vendor/${vendorId}`);
   return response.data;
 }
+
+/**
+ * Upload a document (PDF) to an existing contract.
+ *
+ * THIS IS DIFFERENT from other API calls:
+ * - Normal calls send JSON: {"title": "My Contract"}
+ * - File uploads send FormData (multipart/form-data)
+ *
+ * FormData is a browser API that packages files + text together.
+ * It's like putting a letter AND a photo into the same envelope.
+ *
+ * The 'Content-Type' header is NOT set manually -- the browser
+ * automatically adds it with the correct "boundary" string that
+ * separates the different parts of the form data.
+ */
+export async function uploadContractDocument(contractId: number, file: File): Promise<Contract> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post<Contract>(
+    `/api/contracts/${contractId}/upload-document`,
+    formData,
+    {
+      headers: {
+        // Override the default JSON content type.
+        // Setting to undefined lets the browser auto-detect the right type.
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data;
+}

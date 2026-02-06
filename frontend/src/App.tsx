@@ -24,6 +24,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import VendorList from './pages/VendorList';
 import VendorForm from './pages/VendorForm';
 import VendorDetail from './pages/VendorDetail';
+import ContractForm from './pages/ContractForm';
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
           <Route path="/vendors/new" element={<VendorForm />} />
           <Route path="/vendors/:id" element={<VendorDetail />} />
           <Route path="/vendors/:id/edit" element={<VendorForm />} />
+          <Route path="/vendors/:vendorId/contracts/new" element={<ContractForm />} />
         </Routes>
       </div>
     </Router>

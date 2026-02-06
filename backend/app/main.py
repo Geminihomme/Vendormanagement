@@ -14,8 +14,12 @@ HOW it fits in:
 Browser -> main.py (routes request) -> api/vendors.py (handles it) -> database
 """
 
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.database import engine, Base
 from app.api import vendors, users, contracts
@@ -59,6 +63,14 @@ Base.metadata.create_all(bind=engine)
 app.include_router(vendors.router, prefix="/api/vendors", tags=["vendors"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(contracts.router, prefix="/api/contracts", tags=["contracts"])
+
+# Serve uploaded files (PDFs, etc.) as static files.
+# When someone visits /uploads/contracts/abc123.pdf, FastAPI serves the file
+# directly from the uploads/contracts/ folder on disk.
+# This is how the browser downloads contract documents.
+UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 
 @app.get("/")
