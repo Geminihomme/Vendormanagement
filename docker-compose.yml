@@ -1,0 +1,39 @@
+# Docker Compose: runs all parts of our app together with one command.
+# Think of it as a recipe that says "start the database, then the backend, then the frontend."
+
+services:
+  # --- DATABASE ---
+  # PostgreSQL stores all our vendor data permanently.
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: vendorapp
+      POSTGRES_PASSWORD: vendorpass
+      POSTGRES_DB: vendormanagement
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # --- BACKEND ---
+  # The FastAPI server that handles all business logic.
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://vendorapp:vendorpass@db:5432/vendormanagement
+    depends_on:
+      - db
+
+  # --- FRONTEND ---
+  # The React app that users see in their browser.
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

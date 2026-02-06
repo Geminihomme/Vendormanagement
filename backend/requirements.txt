@@ -1,0 +1,10 @@
+# These are the Python "packages" (pre-built code libraries) our backend needs.
+# Instead of writing everything from scratch, we use these trusted tools.
+
+fastapi==0.109.0        # The web framework - handles HTTP requests and responses
+uvicorn==0.27.0         # The server that runs FastAPI (like an engine for a car)
+sqlalchemy==2.0.25      # Talks to the database using Python instead of raw SQL
+psycopg2-binary==2.9.9  # The "driver" that connects Python to PostgreSQL
+pydantic==2.5.3         # Validates data (makes sure a phone number looks like a phone number)
+alembic==1.13.1         # Manages database changes over time (called "migrations")
+python-dotenv==1.0.0    # Reads configuration from .env files
