@@ -10,10 +10,9 @@ ENDPOINTS:
   PUT    /api/users/{id}      -> Update a user
   DELETE /api/users/{id}      -> Delete a user
 
-SECURITY NOTE:
-In a production app, most of these would require authentication
-(you'd need to be logged in) and authorization (only admins can
-create/delete users). We'll add that later.
+SECURITY:
+All routes require authentication (must be logged in).
+Creating and deleting users requires admin role.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,18 +21,20 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from app.services import user_service
+from app.auth import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
 
 @router.get("/", response_model=list[UserResponse])
-def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Get all users. Passwords are NEVER included in the response."""
     return user_service.get_users(db, skip=skip, limit=limit)
 
 
 @router.post("/", response_model=UserResponse, status_code=201)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
+def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Register a new user.
 
@@ -52,7 +53,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Get a single user by ID."""
     user = user_service.get_user(db, user_id)
     if user is None:
@@ -61,7 +62,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Update a user's profile."""
     user = user_service.update_user(db, user_id, user_update)
     if user is None:
@@ -70,7 +71,7 @@ def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get
 
 
 @router.delete("/{user_id}", status_code=204)
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Delete a user."""
     success = user_service.delete_user(db, user_id)
     if not success:
