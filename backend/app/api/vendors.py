@@ -32,6 +32,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.vendor import VendorCreate, VendorUpdate, VendorResponse
 from app.services import vendor_service
+from app.auth import get_current_user
+from app.models.user import User
 
 # A "router" groups related endpoints together.
 # All routes in this file will be prefixed with /api/vendors (set in main.py).
@@ -48,6 +50,7 @@ def list_vendors(
     sort_by: str = Query("name", description="Sort by: name, email, category, status, created_at, updated_at"),
     sort_order: str = Query("asc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get a list of vendors with optional search, filtering, and sorting.
@@ -72,7 +75,7 @@ def list_vendors(
 
 
 @router.get("/categories", response_model=list[str])
-def get_vendor_categories(db: Session = Depends(get_db)):
+def get_vendor_categories(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Get all unique vendor categories.
     Used to populate the category filter dropdown on the frontend.
@@ -87,6 +90,7 @@ def get_vendor_count(
     status: str | None = None,
     category: str | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get the count of vendors matching the current filters.
@@ -98,7 +102,7 @@ def get_vendor_count(
 
 
 @router.post("/", response_model=VendorResponse, status_code=201)
-def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
+def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Create a new vendor.
 
@@ -118,7 +122,7 @@ def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{vendor_id}", response_model=VendorResponse)
-def get_vendor(vendor_id: int, db: Session = Depends(get_db)):
+def get_vendor(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Get a single vendor by their ID.
 
@@ -138,6 +142,7 @@ def update_vendor(
     vendor_id: int,
     vendor_update: VendorUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Update an existing vendor.
@@ -152,7 +157,7 @@ def update_vendor(
 
 
 @router.delete("/{vendor_id}", status_code=204)
-def delete_vendor(vendor_id: int, db: Session = Depends(get_db)):
+def delete_vendor(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Delete a vendor.
 

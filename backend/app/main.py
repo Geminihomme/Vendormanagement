@@ -31,7 +31,7 @@ logging.basicConfig(
 )
 
 from app.database import engine, Base
-from app.api import vendors, users, contracts, notifications, payments
+from app.api import auth, vendors, users, contracts, notifications, payments
 
 # Import all models so SQLAlchemy knows about them when creating tables.
 # Without these imports, the tables wouldn't be created.
@@ -89,6 +89,10 @@ Base.metadata.create_all(bind=engine)
 # Register all API routes. Each line tells FastAPI:
 # "Any request starting with /api/X should be handled by module X."
 # The tags help organize the auto-generated API docs at /docs
+# Auth routes are PUBLIC (no login required to register or log in!)
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+
+# All other routes require authentication (handled in each route via Depends)
 app.include_router(vendors.router, prefix="/api/vendors", tags=["vendors"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(contracts.router, prefix="/api/contracts", tags=["contracts"])

@@ -28,6 +28,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.notification import NotificationResponse, NotificationMarkRead
 from app.services import notification_service, email_service
+from app.auth import get_current_user
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +37,7 @@ router = APIRouter()
 
 
 @router.get("/upcoming-renewals")
-def get_upcoming_renewals(db: Session = Depends(get_db)):
+def get_upcoming_renewals(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Get all contracts sorted by expiration date (soonest first).
 
@@ -58,6 +60,7 @@ def list_notifications(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get all notifications, newest first.
@@ -69,7 +72,7 @@ def list_notifications(
 
 
 @router.get("/unread-count")
-def get_unread_count(db: Session = Depends(get_db)):
+def get_unread_count(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Get the number of unread notifications.
 
@@ -85,6 +88,7 @@ def get_unread_count(db: Session = Depends(get_db)):
 def mark_notifications_as_read(
     body: NotificationMarkRead,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Mark specific notifications as read.
@@ -95,7 +99,7 @@ def mark_notifications_as_read(
 
 
 @router.post("/check-now")
-def trigger_expiry_check(db: Session = Depends(get_db)):
+def trigger_expiry_check(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     MANUALLY run the contract expiration check.
 

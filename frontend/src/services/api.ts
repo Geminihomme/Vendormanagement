@@ -42,6 +42,52 @@ const api = axios.create({
   },
 });
 
+// --- AUTH INTERCEPTOR ---
+// This automatically attaches the JWT token to every request.
+// Think of it as automatically showing your wristband at every door.
+// Without this, every API call would need to manually add the token.
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// --- AUTH API FUNCTIONS ---
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  full_name: string;
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
+export async function loginUser(data: LoginData): Promise<AuthResponse> {
+  const response = await api.post<AuthResponse>('/api/auth/login', data);
+  return response.data;
+}
+
+export async function registerUser(data: RegisterData): Promise<AuthResponse> {
+  const response = await api.post<AuthResponse>('/api/auth/register', data);
+  return response.data;
+}
+
+export async function getCurrentUser(): Promise<User> {
+  const response = await api.get<User>('/api/auth/me');
+  return response.data;
+}
+
 // --- VENDOR API FUNCTIONS ---
 
 // Search/filter/sort parameters for vendor listing

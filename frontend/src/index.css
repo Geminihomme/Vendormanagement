@@ -741,3 +741,65 @@ body {
   padding-bottom: 8px;
   border-bottom: 1px solid #e0e0e0;
 }
+
+/* --- AUTH PAGES (Login / Register) --- */
+/* Centered card layout for login and registration forms.
+   Think of this as the "entry hall" of the building. */
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.auth-title {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.auth-subtitle {
+  color: #888;
+  text-align: center;
+  margin: 0 0 28px 0;
+  font-size: 15px;
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #666;
+}
+
+/* --- NAVBAR USER SECTION --- */
+/* The right side of the navbar showing username + logout button */
+
+.navbar-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-username {
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}

@@ -41,6 +41,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.payment import PaymentCreate, PaymentUpdate, PaymentResponse
 from app.services import payment_service, vendor_service
+from app.auth import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -52,7 +54,7 @@ router = APIRouter()
 # "analytics" would be treated as a payment ID and cause an error.
 
 @router.get("/analytics/summary")
-def get_spend_summary(db: Session = Depends(get_db)):
+def get_spend_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Overall spending summary: total spent, payment count, average, vendor count.
     Like the "Grand Total" row at the bottom of a spreadsheet.
@@ -61,7 +63,7 @@ def get_spend_summary(db: Session = Depends(get_db)):
 
 
 @router.get("/analytics/by-vendor")
-def get_spend_by_vendor(db: Session = Depends(get_db)):
+def get_spend_by_vendor(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Total spending grouped by vendor, sorted by biggest spender first.
     Like a pivot table: "Acme: $50,000 | CleanCo: $12,000 | SecureIT: $8,000"
@@ -73,6 +75,7 @@ def get_spend_by_vendor(db: Session = Depends(get_db)):
 def get_monthly_spend(
     year: int | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Monthly spending over time. Optionally filter by year.
@@ -82,7 +85,7 @@ def get_monthly_spend(
 
 
 @router.get("/analytics/vendor/{vendor_id}/monthly")
-def get_vendor_monthly_spend(vendor_id: int, db: Session = Depends(get_db)):
+def get_vendor_monthly_spend(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Monthly spending for a specific vendor. Powers the vendor drill-down chart."""
     return payment_service.get_vendor_monthly_spend(db, vendor_id)
 
@@ -92,13 +95,13 @@ def get_vendor_monthly_spend(vendor_id: int, db: Session = Depends(get_db)):
 # ====================================================================
 
 @router.get("/", response_model=list[PaymentResponse])
-def list_payments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_payments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Get all payments, newest first."""
     return payment_service.get_payments(db, skip=skip, limit=limit)
 
 
 @router.post("/", response_model=PaymentResponse, status_code=201)
-def create_payment(payment: PaymentCreate, db: Session = Depends(get_db)):
+def create_payment(payment: PaymentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Record a new payment.
     Validates that the vendor exists before saving.
@@ -113,13 +116,13 @@ def create_payment(payment: PaymentCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/vendor/{vendor_id}", response_model=list[PaymentResponse])
-def get_vendor_payments(vendor_id: int, db: Session = Depends(get_db)):
+def get_vendor_payments(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Get all payments for a specific vendor."""
     return payment_service.get_vendor_payments(db, vendor_id)
 
 
 @router.get("/{payment_id}", response_model=PaymentResponse)
-def get_payment(payment_id: int, db: Session = Depends(get_db)):
+def get_payment(payment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Get a single payment by ID."""
     payment = payment_service.get_payment(db, payment_id)
     if payment is None:
@@ -132,6 +135,7 @@ def update_payment(
     payment_id: int,
     payment_update: PaymentUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Update an existing payment."""
     payment = payment_service.update_payment(db, payment_id, payment_update)
@@ -141,7 +145,7 @@ def update_payment(
 
 
 @router.delete("/{payment_id}", status_code=204)
-def delete_payment(payment_id: int, db: Session = Depends(get_db)):
+def delete_payment(payment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Delete a payment record."""
     success = payment_service.delete_payment(db, payment_id)
     if not success:

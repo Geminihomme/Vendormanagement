@@ -34,6 +34,8 @@ from app.database import get_db
 from app.schemas.contract import ContractCreate, ContractUpdate, ContractResponse
 from app.services import contract_service
 from app.services import vendor_service
+from app.auth import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -56,6 +58,7 @@ def list_contracts(
     sort_by: str = Query("title", description="Sort by: title, status, value, end_date, created_at"),
     sort_order: str = Query("asc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Get contracts with optional search, filtering, and sorting."""
     return contract_service.get_contracts(
@@ -66,7 +69,7 @@ def list_contracts(
 
 
 @router.post("/", response_model=ContractResponse, status_code=201)
-def create_contract(contract: ContractCreate, db: Session = Depends(get_db)):
+def create_contract(contract: ContractCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Create a new contract.
 
@@ -85,7 +88,7 @@ def create_contract(contract: ContractCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{contract_id}", response_model=ContractResponse)
-def get_contract(contract_id: int, db: Session = Depends(get_db)):
+def get_contract(contract_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Get a single contract by ID."""
     contract = contract_service.get_contract(db, contract_id)
     if contract is None:
@@ -98,6 +101,7 @@ def update_contract(
     contract_id: int,
     contract_update: ContractUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Update an existing contract."""
     contract = contract_service.update_contract(db, contract_id, contract_update)
@@ -107,7 +111,7 @@ def update_contract(
 
 
 @router.delete("/{contract_id}", status_code=204)
-def delete_contract(contract_id: int, db: Session = Depends(get_db)):
+def delete_contract(contract_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Delete a contract."""
     success = contract_service.delete_contract(db, contract_id)
     if not success:
@@ -115,7 +119,7 @@ def delete_contract(contract_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/vendor/{vendor_id}", response_model=list[ContractResponse])
-def get_vendor_contracts(vendor_id: int, db: Session = Depends(get_db)):
+def get_vendor_contracts(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Get all contracts for a specific vendor.
 
@@ -130,6 +134,7 @@ async def upload_contract_document(
     contract_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload a document (PDF, etc.) and attach it to a contract.
