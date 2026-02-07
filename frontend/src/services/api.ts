@@ -27,6 +27,7 @@ import { Vendor, VendorCreate, VendorUpdate } from '../types/vendor';
 import { User, UserCreate, UserUpdate } from '../types/user';
 import { Contract, ContractCreate, ContractUpdate } from '../types/contract';
 import { UpcomingRenewal, Notification, CheckNowResponse } from '../types/notification';
+import { Payment, PaymentCreate, VendorSpendSummary, MonthlySpend, SpendSummary } from '../types/payment';
 
 // The base URL of our backend API.
 // In development, the backend runs on port 8000.
@@ -126,18 +127,24 @@ export async function getVendorContracts(vendorId: number): Promise<Contract[]> 
 
 /**
  * Upload a document (PDF) to an existing contract.
- *
- * THIS IS DIFFERENT from other API calls:
- * - Normal calls send JSON: {"title": "My Contract"}
- * - File uploads send FormData (multipart/form-data)
- *
- * FormData is a browser API that packages files + text together.
- * It's like putting a letter AND a photo into the same envelope.
- *
- * The 'Content-Type' header is NOT set manually -- the browser
- * automatically adds it with the correct "boundary" string that
- * separates the different parts of the form data.
+ * Uses FormData (multipart/form-data) instead of JSON.
  */
+export async function uploadContractDocument(contractId: number, file: File): Promise<Contract> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post<Contract>(
+    `/api/contracts/${contractId}/upload-document`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data;
+}
+
 // --- NOTIFICATION & RENEWAL API FUNCTIONS ---
 
 export async function getUpcomingRenewals(): Promise<UpcomingRenewal[]> {
@@ -166,20 +173,40 @@ export async function triggerExpiryCheck(): Promise<CheckNowResponse> {
   return response.data;
 }
 
-export async function uploadContractDocument(contractId: number, file: File): Promise<Contract> {
-  const formData = new FormData();
-  formData.append('file', file);
+// --- PAYMENT & ANALYTICS API FUNCTIONS ---
 
-  const response = await api.post<Contract>(
-    `/api/contracts/${contractId}/upload-document`,
-    formData,
-    {
-      headers: {
-        // Override the default JSON content type.
-        // Setting to undefined lets the browser auto-detect the right type.
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
+export async function getPayments(): Promise<Payment[]> {
+  const response = await api.get<Payment[]>('/api/payments/');
+  return response.data;
+}
+
+export async function createPayment(payment: PaymentCreate): Promise<Payment> {
+  const response = await api.post<Payment>('/api/payments/', payment);
+  return response.data;
+}
+
+export async function deletePayment(id: number): Promise<void> {
+  await api.delete(`/api/payments/${id}`);
+}
+
+export async function getVendorPayments(vendorId: number): Promise<Payment[]> {
+  const response = await api.get<Payment[]>(`/api/payments/vendor/${vendorId}`);
+  return response.data;
+}
+
+export async function getSpendSummary(): Promise<SpendSummary> {
+  const response = await api.get<SpendSummary>('/api/payments/analytics/summary');
+  return response.data;
+}
+
+export async function getSpendByVendor(): Promise<VendorSpendSummary[]> {
+  const response = await api.get<VendorSpendSummary[]>('/api/payments/analytics/by-vendor');
+  return response.data;
+}
+
+export async function getMonthlySpend(year?: number): Promise<MonthlySpend[]> {
+  const response = await api.get<MonthlySpend[]>('/api/payments/analytics/monthly', {
+    params: year ? { year } : {},
+  });
   return response.data;
 }

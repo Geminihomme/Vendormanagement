@@ -669,3 +669,18 @@ body {
   color: #28a745;
   font-size: 12px;
 }
+
+/* --- CHART TOOLTIP --- */
+
+.chart-tooltip {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.chart-tooltip p {
+  margin: 2px 0;
+}
