@@ -44,8 +44,22 @@ const api = axios.create({
 
 // --- VENDOR API FUNCTIONS ---
 
-export async function getVendors(): Promise<Vendor[]> {
-  const response = await api.get<Vendor[]>('/api/vendors/');
+// Search/filter/sort parameters for vendor listing
+export interface VendorSearchParams {
+  search?: string;
+  status?: string;
+  category?: string;
+  sort_by?: string;
+  sort_order?: string;
+}
+
+export async function getVendors(params?: VendorSearchParams): Promise<Vendor[]> {
+  const response = await api.get<Vendor[]>('/api/vendors/', { params });
+  return response.data;
+}
+
+export async function getVendorCategories(): Promise<string[]> {
+  const response = await api.get<string[]>('/api/vendors/categories');
   return response.data;
 }
 

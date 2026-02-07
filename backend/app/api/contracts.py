@@ -27,7 +27,7 @@ FastAPI handles this with UploadFile, which gives us:
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -48,9 +48,21 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit
 
 
 @router.get("/", response_model=list[ContractResponse])
-def list_contracts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Get all contracts. Includes vendor and creator names."""
-    return contract_service.get_contracts(db, skip=skip, limit=limit)
+def list_contracts(
+    skip: int = 0,
+    limit: int = 100,
+    search: str | None = Query(None, description="Search by title, description, or contract number"),
+    status: str | None = Query(None, description="Filter by status"),
+    sort_by: str = Query("title", description="Sort by: title, status, value, end_date, created_at"),
+    sort_order: str = Query("asc", description="Sort order: asc or desc"),
+    db: Session = Depends(get_db),
+):
+    """Get contracts with optional search, filtering, and sorting."""
+    return contract_service.get_contracts(
+        db, skip=skip, limit=limit,
+        search=search, status=status,
+        sort_by=sort_by, sort_order=sort_order,
+    )
 
 
 @router.post("/", response_model=ContractResponse, status_code=201)

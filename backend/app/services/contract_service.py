@@ -19,6 +19,7 @@ API Route -> Contract Service -> Database
 """
 
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from app.models.contract import Contract
 from app.models.vendor import Vendor
@@ -26,12 +27,54 @@ from app.models.user import User
 from app.schemas.contract import ContractCreate, ContractUpdate, ContractResponse
 
 
-def get_contracts(db: Session, skip: int = 0, limit: int = 100):
+def get_contracts(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    search: str | None = None,
+    status: str | None = None,
+    sort_by: str = "title",
+    sort_order: str = "asc",
+):
     """
-    Get a list of all contracts.
-    Returns contract data enriched with vendor and user names.
+    Get a list of all contracts with optional search, filtering, and sorting.
+
+    Search looks across title, description, and contract_number.
+    Sort supports: title, status, value, end_date, created_at.
     """
-    contracts = db.query(Contract).offset(skip).limit(limit).all()
+    query = db.query(Contract)
+
+    # Search across multiple fields
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                Contract.title.ilike(search_pattern),
+                Contract.description.ilike(search_pattern),
+                Contract.contract_number.ilike(search_pattern),
+            )
+        )
+
+    # Filter by status
+    if status:
+        query = query.filter(Contract.status == status)
+
+    # Sorting
+    sort_columns = {
+        "title": Contract.title,
+        "status": Contract.status,
+        "value": Contract.value,
+        "end_date": Contract.end_date,
+        "created_at": Contract.created_at,
+    }
+    sort_column = sort_columns.get(sort_by, Contract.title)
+
+    if sort_order == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+
+    contracts = query.offset(skip).limit(limit).all()
     return [_enrich_contract(c) for c in contracts]
 
 

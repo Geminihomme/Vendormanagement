@@ -28,6 +28,7 @@ import ContractForm from './pages/ContractForm';
 import RenewalsDashboard from './pages/RenewalsDashboard';
 import SpendAnalytics from './pages/SpendAnalytics';
 import PaymentForm from './pages/PaymentForm';
+import SearchPage from './pages/SearchPage';
 
 function App() {
   return (
@@ -55,6 +56,9 @@ function App() {
           <Link to="/analytics" className="navbar-link">
             Analytics
           </Link>
+          <Link to="/search" className="navbar-link">
+            Search
+          </Link>
         </nav>
 
         {/* --- PAGE ROUTING --- */}
@@ -70,6 +74,7 @@ function App() {
           <Route path="/renewals" element={<RenewalsDashboard />} />
           <Route path="/analytics" element={<SpendAnalytics />} />
           <Route path="/payments/new" element={<PaymentForm />} />
+          <Route path="/search" element={<SearchPage />} />
         </Routes>
       </div>
     </Router>

@@ -684,3 +684,60 @@ body {
 .chart-tooltip p {
   margin: 2px 0;
 }
+
+/* --- SORTABLE TABLE HEADERS --- */
+/* Clickable column headers that change the sort order.
+   The cursor becomes a pointer (hand icon) to show it's clickable. */
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;     /* Prevents text selection when clicking rapidly */
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.sortable-th:hover {
+  color: #0066cc;
+}
+
+/* --- GLOBAL SEARCH PAGE --- */
+
+.search-hero {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.search-input-large {
+  width: 100%;
+  max-width: 600px;
+  padding: 14px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 18px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-input-large:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
+}
+
+.search-results-count {
+  margin-top: 12px;
+  color: #666;
+  font-size: 14px;
+}
+
+.search-section {
+  margin-bottom: 32px;
+}
+
+.search-section-title {
+  font-size: 18px;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
