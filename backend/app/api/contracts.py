@@ -34,6 +34,8 @@ from app.database import get_db
 from app.schemas.contract import ContractCreate, ContractUpdate, ContractResponse
 from app.services import contract_service
 from app.services import vendor_service
+from app.services import approval_service
+from app.models.approval import ApprovalType
 from app.auth import get_current_user
 from app.models.user import User
 
@@ -84,7 +86,18 @@ def create_contract(contract: ContractCreate, db: Session = Depends(get_db), cur
             detail=f"Vendor with id {contract.vendor_id} not found"
         )
 
-    return contract_service.create_contract(db, contract)
+    new_contract = contract_service.create_contract(db, contract)
+
+    # Auto-create an approval request for the new contract
+    approval_service.create_approval(
+        db,
+        approval_type=ApprovalType.CONTRACT,
+        entity_id=new_contract.id,
+        entity_title=new_contract.title,
+        requested_by_id=current_user.id,
+    )
+
+    return new_contract
 
 
 @router.get("/{contract_id}", response_model=ContractResponse)

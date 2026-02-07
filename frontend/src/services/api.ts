@@ -28,6 +28,7 @@ import { User, UserCreate, UserUpdate } from '../types/user';
 import { Contract, ContractCreate, ContractUpdate } from '../types/contract';
 import { UpcomingRenewal, Notification, CheckNowResponse } from '../types/notification';
 import { Payment, PaymentCreate, VendorSpendSummary, MonthlySpend, SpendSummary } from '../types/payment';
+import { Approval, ApprovalAction, ApprovalSummary } from '../types/approval';
 
 // The base URL of our backend API.
 // In development, the backend runs on port 8000.
@@ -268,5 +269,35 @@ export async function getMonthlySpend(year?: number): Promise<MonthlySpend[]> {
   const response = await api.get<MonthlySpend[]>('/api/payments/analytics/monthly', {
     params: year ? { year } : {},
   });
+  return response.data;
+}
+
+// --- APPROVAL API FUNCTIONS ---
+
+export async function getApprovalSummary(): Promise<ApprovalSummary> {
+  const response = await api.get<ApprovalSummary>('/api/approvals/summary');
+  return response.data;
+}
+
+export async function getPendingApprovals(): Promise<Approval[]> {
+  const response = await api.get<Approval[]>('/api/approvals/pending');
+  return response.data;
+}
+
+export async function getAllApprovals(params?: {
+  status?: string;
+  approval_type?: string;
+}): Promise<Approval[]> {
+  const response = await api.get<Approval[]>('/api/approvals/', { params });
+  return response.data;
+}
+
+export async function getApproval(id: number): Promise<Approval> {
+  const response = await api.get<Approval>(`/api/approvals/${id}`);
+  return response.data;
+}
+
+export async function reviewApproval(id: number, action: ApprovalAction): Promise<Approval> {
+  const response = await api.post<Approval>(`/api/approvals/${id}/review`, action);
   return response.data;
 }

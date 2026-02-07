@@ -172,6 +172,102 @@ def send_expiry_notification_email(
         return False
 
 
+def send_approval_notification_email(
+    recipient_email: str,
+    recipient_name: str,
+    action: str,
+    entity_type: str,
+    entity_name: str,
+    reviewer_name: str,
+    comment: str,
+) -> bool:
+    """
+    Send an email to notify someone that their approval request
+    has been approved or rejected.
+
+    This fires when a manager clicks "Approve" or "Reject" in the
+    approval inbox. The person who submitted the vendor/contract
+    gets an email letting them know the outcome.
+    """
+    if action == "approved":
+        status_color = "#28a745"  # Green
+        status_emoji = "Approved"
+        subject = f"Your {entity_type} has been approved: {entity_name}"
+    else:
+        status_color = "#dc3545"  # Red
+        status_emoji = "Rejected"
+        subject = f"Your {entity_type} was not approved: {entity_name}"
+
+    html_body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
+        <div style="background-color: {status_color}; color: white; padding: 16px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">{entity_type.title()} {status_emoji}</h2>
+        </div>
+        <div style="border: 1px solid #e0e0e0; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <p>Hello {recipient_name},</p>
+            <p>Your {entity_type} submission has been <strong style="color: {status_color};">{action}</strong>.</p>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; color: #666;">{entity_type.title()}:</td>
+                    <td style="padding: 8px;">{entity_name}</td>
+                </tr>
+                <tr style="background-color: #f8f9fa;">
+                    <td style="padding: 8px; font-weight: bold; color: #666;">Reviewed by:</td>
+                    <td style="padding: 8px;">{reviewer_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; color: #666;">Comment:</td>
+                    <td style="padding: 8px;">{comment}</td>
+                </tr>
+            </table>
+
+            {"<p>The " + entity_type + " is now active in the system.</p>" if action == "approved" else "<p>Please review the feedback and resubmit if needed.</p>"}
+
+            <p style="color: #888; font-size: 12px; margin-top: 24px;">
+                This is an automated message from the Vendor Management Platform.
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+
+    # --- DEV MODE ---
+    if not SMTP_HOST:
+        logger.info("=" * 60)
+        logger.info("EMAIL (Dev Mode - Not Actually Sent)")
+        logger.info(f"  To: {recipient_email}")
+        logger.info(f"  Subject: {subject}")
+        logger.info(f"  {entity_type.title()}: {entity_name}")
+        logger.info(f"  Action: {action}")
+        logger.info(f"  Reviewer: {reviewer_name}")
+        logger.info(f"  Comment: {comment}")
+        logger.info("=" * 60)
+        return True
+
+    # --- PRODUCTION MODE ---
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = SMTP_FROM
+        msg["To"] = recipient_email
+        msg.attach(MIMEText(html_body, "html"))
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            if SMTP_USER and SMTP_PASSWORD:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_FROM, recipient_email, msg.as_string())
+
+        logger.info(f"Approval email sent to {recipient_email}: {subject}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send approval email to {recipient_email}: {e}")
+        return False
+
+
 def send_batch_notifications(notifications: list[dict]) -> dict:
     """
     Send emails for a batch of new notifications.

@@ -32,6 +32,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.vendor import VendorCreate, VendorUpdate, VendorResponse
 from app.services import vendor_service
+from app.services import approval_service
+from app.models.approval import ApprovalType
 from app.auth import get_current_user
 from app.models.user import User
 
@@ -117,8 +119,25 @@ def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db), current_u
     If validation fails, it returns a 422 error with details.
 
     status_code=201 means "Created" -- tells the frontend it was successful.
+
+    APPROVAL WORKFLOW:
+    New vendors start with "pending" status. An approval request is
+    automatically created so a manager can review it. The vendor won't
+    become "approved" until a manager explicitly approves it.
+    Think of it as putting a "New Vendor Request" form in the inbox.
     """
-    return vendor_service.create_vendor(db, vendor)
+    new_vendor = vendor_service.create_vendor(db, vendor)
+
+    # Automatically create an approval request for the new vendor
+    approval_service.create_approval(
+        db,
+        approval_type=ApprovalType.VENDOR,
+        entity_id=new_vendor.id,
+        entity_title=new_vendor.name,
+        requested_by_id=current_user.id,
+    )
+
+    return new_vendor
 
 
 @router.get("/{vendor_id}", response_model=VendorResponse)

@@ -31,7 +31,7 @@ logging.basicConfig(
 )
 
 from app.database import engine, Base
-from app.api import auth, vendors, users, contracts, notifications, payments
+from app.api import auth, vendors, users, contracts, notifications, payments, approvals
 
 # Import all models so SQLAlchemy knows about them when creating tables.
 # Without these imports, the tables wouldn't be created.
@@ -40,6 +40,7 @@ import app.models.user         # noqa: F401
 import app.models.contract     # noqa: F401
 import app.models.notification # noqa: F401
 import app.models.payment      # noqa: F401
+import app.models.approval     # noqa: F401
 
 # LIFESPAN: What happens when the app starts up and shuts down.
 # This is where we start and stop the background scheduler.
@@ -98,6 +99,7 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(contracts.router, prefix="/api/contracts", tags=["contracts"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(payments.router, prefix="/api/payments", tags=["payments"])
+app.include_router(approvals.router, prefix="/api/approvals", tags=["approvals"])
 
 # Serve uploaded files (PDFs, etc.) as static files.
 # When someone visits /uploads/contracts/abc123.pdf, FastAPI serves the file
