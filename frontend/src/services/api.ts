@@ -29,6 +29,7 @@ import { Contract, ContractCreate, ContractUpdate } from '../types/contract';
 import { UpcomingRenewal, Notification, CheckNowResponse } from '../types/notification';
 import { Payment, PaymentCreate, VendorSpendSummary, MonthlySpend, SpendSummary } from '../types/payment';
 import { Approval, ApprovalAction, ApprovalSummary } from '../types/approval';
+import { RiskDashboardItem, RiskSummary, RiskAlert, RiskScoreResponse } from '../types/risk';
 
 // The base URL of our backend API.
 // In development, the backend runs on port 8000.
@@ -299,5 +300,37 @@ export async function getApproval(id: number): Promise<Approval> {
 
 export async function reviewApproval(id: number, action: ApprovalAction): Promise<Approval> {
   const response = await api.post<Approval>(`/api/approvals/${id}/review`, action);
+  return response.data;
+}
+
+// --- RISK ASSESSMENT API FUNCTIONS ---
+
+export async function getRiskSummary(): Promise<RiskSummary> {
+  const response = await api.get<RiskSummary>('/api/risk/summary');
+  return response.data;
+}
+
+export async function getRiskDashboard(): Promise<RiskDashboardItem[]> {
+  const response = await api.get<RiskDashboardItem[]>('/api/risk/dashboard');
+  return response.data;
+}
+
+export async function getRiskAlerts(): Promise<RiskAlert[]> {
+  const response = await api.get<RiskAlert[]>('/api/risk/alerts');
+  return response.data;
+}
+
+export async function getVendorRisk(vendorId: number): Promise<RiskScoreResponse> {
+  const response = await api.get<RiskScoreResponse>(`/api/risk/vendor/${vendorId}`);
+  return response.data;
+}
+
+export async function recalculateAllRisks(): Promise<{ vendors_assessed: number }> {
+  const response = await api.post<{ vendors_assessed: number }>('/api/risk/recalculate');
+  return response.data;
+}
+
+export async function recalculateVendorRisk(vendorId: number): Promise<RiskScoreResponse> {
+  const response = await api.post<RiskScoreResponse>(`/api/risk/vendor/${vendorId}/recalculate`);
   return response.data;
 }
