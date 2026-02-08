@@ -139,7 +139,7 @@ def get_spend_by_vendor(db: Session, display_currency: str = "USD") -> list[dict
     vendor_totals: dict[int, dict] = {}
     for p in payments:
         vid = p.vendor_id
-        converted = convert(p.amount, getattr(p, "currency", "USD"), display_currency, rates)
+        converted = convert(float(p.amount), p.currency, display_currency, rates)
 
         if vid not in vendor_totals:
             vendor_totals[vid] = {
@@ -199,7 +199,7 @@ def get_monthly_spend(db: Session, year: int | None = None, display_currency: st
         yr = p.payment_date.year
         mo = p.payment_date.month
         key = (yr, mo)
-        converted = convert(p.amount, getattr(p, "currency", "USD"), display_currency, rates)
+        converted = convert(float(p.amount), p.currency, display_currency, rates)
 
         if key not in monthly_buckets:
             monthly_buckets[key] = {"total": 0.0, "count": 0}
@@ -239,7 +239,7 @@ def get_spend_summary(db: Session, display_currency: str = "USD") -> dict:
     total = 0.0
     vendor_ids = set()
     for p in payments:
-        total += convert(p.amount, getattr(p, "currency", "USD"), display_currency, rates)
+        total += convert(float(p.amount), p.currency, display_currency, rates)
         vendor_ids.add(p.vendor_id)
 
     count = len(payments)
@@ -271,7 +271,7 @@ def get_vendor_monthly_spend(db: Session, vendor_id: int, display_currency: str 
         yr = p.payment_date.year
         mo = p.payment_date.month
         key = (yr, mo)
-        converted = convert(p.amount, getattr(p, "currency", "USD"), display_currency, rates)
+        converted = convert(float(p.amount), p.currency, display_currency, rates)
 
         if key not in monthly_buckets:
             monthly_buckets[key] = {"total": 0.0, "count": 0}
@@ -299,8 +299,8 @@ def _enrich_payment(payment: Payment) -> dict:
         "vendor_name": payment.vendor.name if payment.vendor else None,
         "contract_id": payment.contract_id,
         "contract_title": payment.contract.title if payment.contract else None,
-        "amount": payment.amount,
-        "currency": getattr(payment, "currency", "USD"),
+        "amount": float(payment.amount),
+        "currency": payment.currency,
         "payment_date": payment.payment_date,
         "invoice_number": payment.invoice_number,
         "description": payment.description,

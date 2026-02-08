@@ -27,7 +27,11 @@ With nesting, the frontend gets:
 """
 
 from datetime import datetime, date
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# The only currencies our system accepts.
+# Adding a currency here also requires adding it to the exchange_rates table.
+VALID_CURRENCIES = {"USD", "EUR", "GBP"}
 
 
 class ContractCreate(BaseModel):
@@ -48,6 +52,14 @@ class ContractCreate(BaseModel):
     status: str = Field("draft", description="Contract status")
     document_url: str | None = Field(None, max_length=500, description="Link to contract document")
 
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str) -> str:
+        code = v.upper()
+        if code not in VALID_CURRENCIES:
+            raise ValueError(f"Unsupported currency: {v}. Must be one of: {', '.join(sorted(VALID_CURRENCIES))}")
+        return code
+
 
 class ContractUpdate(BaseModel):
     """
@@ -60,6 +72,16 @@ class ContractUpdate(BaseModel):
     vendor_id: int | None = None
     value: float | None = Field(None, ge=0)
     currency: str | None = Field(None, max_length=3)
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        code = v.upper()
+        if code not in VALID_CURRENCIES:
+            raise ValueError(f"Unsupported currency: {v}. Must be one of: {', '.join(sorted(VALID_CURRENCIES))}")
+        return code
     start_date: date | None = None
     end_date: date | None = None
     status: str | None = Field(None, max_length=20)

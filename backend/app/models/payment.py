@@ -40,7 +40,7 @@ EXAMPLE DATA:
 """
 
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, DateTime, Text, Float, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Numeric, Date, ForeignKey
 from sqlalchemy.orm import relationship
 import enum
 
@@ -91,7 +91,8 @@ class Payment(Base):
     contract_id = Column(Integer, ForeignKey("contracts.id"), nullable=True, index=True)
 
     # --- HOW MUCH did we pay? ---
-    amount = Column(Float, nullable=False)
+    # Numeric(14,2) for exact precision on million-dollar transactions.
+    amount = Column(Numeric(14, 2), nullable=False)
 
     # --- IN WHAT CURRENCY? ---
     # Like writing "USD" next to $500 on a check — the number alone

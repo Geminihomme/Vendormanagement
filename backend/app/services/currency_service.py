@@ -120,8 +120,21 @@ def convert(
     if from_code == to_code:
         return amount
 
-    from_rate = rates.get(from_code, 1.0)
-    to_rate = rates.get(to_code, 1.0)
+    from_rate = rates.get(from_code)
+    to_rate = rates.get(to_code)
+
+    # Guard: reject unknown currencies instead of silently defaulting
+    if from_rate is None:
+        raise ValueError(f"Unknown currency: {from_code}")
+    if to_rate is None:
+        raise ValueError(f"Unknown currency: {to_code}")
+
+    # Guard: a rate of zero would cause a division-by-zero crash.
+    # This should never happen, but corrupted data or a bad admin update could cause it.
+    if to_rate <= 0:
+        raise ValueError(f"Invalid exchange rate for {to_code}: {to_rate}")
+    if from_rate < 0:
+        raise ValueError(f"Invalid exchange rate for {from_code}: {from_rate}")
 
     # Step 1: Convert to USD
     amount_in_usd = amount * from_rate

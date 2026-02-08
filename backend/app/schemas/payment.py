@@ -11,7 +11,10 @@ KEY DESIGN:
 """
 
 from datetime import datetime, date
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# The only currencies our system accepts.
+VALID_CURRENCIES = {"USD", "EUR", "GBP"}
 
 
 class PaymentCreate(BaseModel):
@@ -26,6 +29,14 @@ class PaymentCreate(BaseModel):
     status: str = Field("paid", description="Payment status")
     payment_method: str | None = Field(None, description="How the payment was made")
 
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str) -> str:
+        code = v.upper()
+        if code not in VALID_CURRENCIES:
+            raise ValueError(f"Unsupported currency: {v}. Must be one of: {', '.join(sorted(VALID_CURRENCIES))}")
+        return code
+
 
 class PaymentUpdate(BaseModel):
     """Schema for updating a payment. All fields optional."""
@@ -33,6 +44,16 @@ class PaymentUpdate(BaseModel):
     contract_id: int | None = None
     amount: float | None = Field(None, gt=0)
     currency: str | None = Field(None, max_length=3)
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        code = v.upper()
+        if code not in VALID_CURRENCIES:
+            raise ValueError(f"Unsupported currency: {v}. Must be one of: {', '.join(sorted(VALID_CURRENCIES))}")
+        return code
     payment_date: date | None = None
     invoice_number: str | None = Field(None, max_length=100)
     description: str | None = None

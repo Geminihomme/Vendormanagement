@@ -41,7 +41,7 @@ Notice vendor_id=1 appears twice: Acme has two contracts with us.
 """
 
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, DateTime, Text, Float, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Numeric, Date, ForeignKey
 from sqlalchemy.orm import relationship
 import enum
 
@@ -108,9 +108,10 @@ class Contract(Base):
     # know who originally created them.
 
     # Financial details
-    value = Column(Float, nullable=True)             # Total contract value
-    # Float is used for simplicity. In a real financial system, you'd use
-    # Decimal for exact precision (floats can have tiny rounding errors).
+    # Numeric(14,2) = up to 14 digits total, 2 after the decimal.
+    # Supports values up to $999,999,999,999.99 — more than enough
+    # for million-dollar EMEA transactions without rounding errors.
+    value = Column(Numeric(14, 2), nullable=True)
 
     # Currency — which currency the value is stored in (ISO 4217 code).
     # Like a price tag in a store: the number alone isn't enough,

@@ -58,6 +58,7 @@ from app.models.vendor import Vendor
 from app.models.contract import Contract
 from app.models.payment import Payment
 from app.models.risk_assessment import RiskAssessment, RiskLevel
+from app.services.currency_service import convert, get_rates_dict
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,9 @@ logger = logging.getLogger(__name__)
 # Each factor is scored 0-25 (total max = 100)
 MAX_FACTOR_SCORE = 25.0
 
-# Contract value thresholds (in dollars)
+# Contract value thresholds — always measured in USD for consistency.
+# All contract values are converted to USD before comparison, regardless
+# of what currency they were entered in.
 VALUE_THRESHOLDS = [
     (200_000, 25),   # Over $200K  → 25 points (maximum risk)
     (100_000, 20),   # $100K-$200K → 20 points
@@ -104,9 +107,10 @@ def calculate_vendor_risk(db: Session, vendor_id: int) -> dict:
     # Gather data for scoring
     contracts = db.query(Contract).filter(Contract.vendor_id == vendor_id).all()
     payments = db.query(Payment).filter(Payment.vendor_id == vendor_id).all()
+    rates = get_rates_dict(db)
 
     # Calculate each factor
-    value_result = _score_contract_value(contracts)
+    value_result = _score_contract_value(contracts, rates)
     expiry_result = _score_contract_expiry(contracts)
     compliance_result = _score_compliance(contracts)
     payment_result = _score_payment_health(payments)
@@ -186,6 +190,7 @@ def get_risk_dashboard(db: Session) -> list[dict]:
     Sorted by score descending (highest risk first).
     """
     vendors = db.query(Vendor).all()
+    rates = get_rates_dict(db)
     dashboard_items = []
 
     for vendor in vendors:
@@ -197,7 +202,11 @@ def get_risk_dashboard(db: Session) -> list[dict]:
         )
 
         contracts = db.query(Contract).filter(Contract.vendor_id == vendor.id).all()
-        total_value = sum(c.value or 0 for c in contracts)
+        # Convert all contract values to USD for consistent comparison
+        total_value = sum(
+            convert(c.value or 0, getattr(c, "currency", "USD") or "USD", "USD", rates)
+            for c in contracts
+        )
         overdue_count = (
             db.query(Payment)
             .filter(Payment.vendor_id == vendor.id, Payment.status == "overdue")
@@ -284,23 +293,29 @@ def get_risk_alerts(db: Session) -> list[dict]:
 # PRIVATE SCORING FUNCTIONS
 # ===================================================================
 
-def _score_contract_value(contracts: list) -> dict:
+def _score_contract_value(contracts: list, rates: dict[str, float]) -> dict:
     """
     FACTOR 1: Contract Value Score (0-25)
 
     How much total money is at stake with this vendor?
 
-    ANALOGY: If someone owes a bank $500, it's not a big deal.
-    If they owe $500,000, the bank pays a LOT more attention.
-    Same logic: a vendor with $200K in contracts gets more scrutiny
-    than one with $5K.
+    MULTI-CURRENCY: Since contracts can be in USD, EUR, or GBP,
+    we convert every value to USD before summing. This is like
+    a bank converting all loans to one currency before assessing
+    total exposure. A €100K contract is roughly $108K, not $100K.
     """
     active_contracts = [c for c in contracts if c.status in ("active", "pending_approval")]
-    total_value = sum(c.value or 0 for c in active_contracts)
+
+    # Convert each contract value to USD for consistent scoring
+    total_value_usd = 0.0
+    for c in active_contracts:
+        if c.value:
+            currency = getattr(c, "currency", "USD") or "USD"
+            total_value_usd += convert(c.value, currency, "USD", rates)
 
     score = 0
     for threshold, points in VALUE_THRESHOLDS:
-        if total_value >= threshold:
+        if total_value_usd >= threshold:
             score = points
             break
 
@@ -308,7 +323,7 @@ def _score_contract_value(contracts: list) -> dict:
         desc = "No active contracts"
     else:
         desc = (
-            f"Total contract value: ${total_value:,.0f} across "
+            f"Total contract value: ${total_value_usd:,.0f} USD equivalent across "
             f"{len(active_contracts)} active contract(s)"
         )
 

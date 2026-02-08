@@ -33,7 +33,7 @@ Reading the table: 1 EUR = 1.08 USD, 1 GBP = 1.27 USD.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy import Column, Integer, String, DateTime, Numeric
 
 from app.database import Base
 
@@ -56,8 +56,10 @@ class ExchangeRate(Base):
     # ISO 4217 standard — the international language for currencies
     currency_code = Column(String(3), nullable=False, unique=True, index=True)
 
-    # How much 1 unit of this currency is worth in USD
-    rate_to_usd = Column(Float, nullable=False)
+    # How much 1 unit of this currency is worth in USD.
+    # Numeric(10,6) = 6 decimal places, the standard for exchange rates.
+    # This matters: 1.080000 vs 1.08 can mean thousands on a million-dollar deal.
+    rate_to_usd = Column(Numeric(10, 6), nullable=False)
 
     # When this rate was last updated (rates change daily in the real world)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

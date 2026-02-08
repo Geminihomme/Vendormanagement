@@ -95,7 +95,7 @@ def generate_contracts_csv(db: Session) -> str:
     writer = csv.writer(output)
 
     writer.writerow([
-        "ID", "Title", "Contract Number", "Vendor", "Value",
+        "ID", "Title", "Contract Number", "Vendor", "Value", "Currency",
         "Start Date", "End Date", "Status", "Has Document", "Created"
     ])
 
@@ -103,6 +103,7 @@ def generate_contracts_csv(db: Session) -> str:
         writer.writerow([
             contract.id, contract.title, contract.contract_number or "",
             vendor_name or "", f"{contract.value:.2f}" if contract.value else "0.00",
+            getattr(contract, "currency", "USD") or "USD",
             str(contract.start_date) if contract.start_date else "",
             str(contract.end_date) if contract.end_date else "",
             contract.status, "Yes" if contract.document_url else "No",
@@ -126,14 +127,15 @@ def generate_payments_csv(db: Session) -> str:
     writer = csv.writer(output)
 
     writer.writerow([
-        "ID", "Vendor", "Contract", "Amount", "Payment Date",
+        "ID", "Vendor", "Contract", "Amount", "Currency", "Payment Date",
         "Invoice Number", "Status", "Payment Method", "Description"
     ])
 
     for payment, vendor_name, contract_title in payments:
         writer.writerow([
             payment.id, vendor_name or "", contract_title or "",
-            f"{payment.amount:.2f}", str(payment.payment_date),
+            f"{float(payment.amount):.2f}", getattr(payment, "currency", "USD") or "USD",
+            str(payment.payment_date),
             payment.invoice_number or "", payment.status,
             payment.payment_method or "", payment.description or "",
         ])
@@ -269,10 +271,10 @@ def generate_spend_report_excel(db: Session) -> bytes:
     # --- SHEET 4: ALL PAYMENTS ---
     ws_payments = wb.create_sheet("All Payments")
     ws_payments.append([
-        "Date", "Vendor", "Contract", "Amount", "Invoice #",
+        "Date", "Vendor", "Contract", "Amount", "Currency", "Invoice #",
         "Status", "Method", "Description"
     ])
-    _style_header_row(ws_payments, 8)
+    _style_header_row(ws_payments, 9)
 
     payments = (
         db.query(Payment, Vendor.name, Contract.title)
@@ -286,7 +288,8 @@ def generate_spend_report_excel(db: Session) -> bytes:
         ws_payments.append([
             payment.payment_date.strftime("%Y-%m-%d") if payment.payment_date else "",
             vendor_name or "", contract_title or "",
-            float(payment.amount), payment.invoice_number or "",
+            float(payment.amount), getattr(payment, "currency", "USD") or "USD",
+            payment.invoice_number or "",
             payment.status, payment.payment_method or "",
             payment.description or "",
         ])
@@ -324,7 +327,7 @@ def generate_contract_expiry_report_excel(db: Session) -> bytes:
     )
 
     headers = [
-        "Title", "Contract #", "Vendor", "Value",
+        "Title", "Contract #", "Vendor", "Value", "Currency",
         "Start Date", "End Date", "Days Remaining",
         "Status", "Urgency"
     ]
@@ -362,6 +365,7 @@ def generate_contract_expiry_report_excel(db: Session) -> bytes:
             ws.append([
                 contract.title, contract.contract_number or "",
                 vendor_name or "", float(contract.value or 0),
+                getattr(contract, "currency", "USD") or "USD",
                 str(contract.start_date) if contract.start_date else "",
                 str(contract.end_date) if contract.end_date else "",
                 days, contract.status, urgency,
