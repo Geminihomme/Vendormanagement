@@ -48,20 +48,19 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
+from app.config import JWT_SECRET_KEY, JWT_EXPIRE_HOURS
 
 # --- CONFIGURATION ---
 
 # The secret key used to sign JWT tokens.
-# In production, this MUST be a long random string stored in an environment variable.
-# NEVER hardcode this in real production code!
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production-please")
+# Read from the centralized config (which reads from environment variables).
+SECRET_KEY = JWT_SECRET_KEY
 
 # The algorithm used to sign tokens. HS256 is standard and secure.
 ALGORITHM = "HS256"
 
-# How long tokens are valid (24 hours).
-# After this, the user must log in again.
-ACCESS_TOKEN_EXPIRE_HOURS = 24
+# How long tokens are valid. Configurable via JWT_EXPIRE_HOURS env var.
+ACCESS_TOKEN_EXPIRE_HOURS = JWT_EXPIRE_HOURS
 
 # This tells FastAPI: "Look for a Bearer token in the Authorization header."
 # When the frontend sends a request, it includes:

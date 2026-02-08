@@ -21,3 +21,9 @@ Thumbs.db
 
 # Database
 *.db
+
+# Uploaded files (contracts, documents)
+backend/uploads/
+
+# Production environment files (contain secrets!)
+.env.production

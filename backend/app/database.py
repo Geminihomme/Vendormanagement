@@ -13,17 +13,14 @@ Without a database connection, our app would lose all data every time it restart
 The database stores vendor information permanently.
 """
 
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
+from app.config import DATABASE_URL
+
 # The DATABASE_URL tells Python where to find PostgreSQL.
 # Format: postgresql://username:password@host:port/database_name
-# We read it from an environment variable so we don't hardcode passwords.
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://vendorapp:vendorpass@localhost:5432/vendormanagement"
-)
+# Read from the centralized config (which reads from environment variables).
 
 # The "engine" is the actual connection to the database.
 # Think of it as opening the phone line.

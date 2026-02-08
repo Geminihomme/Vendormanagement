@@ -23,6 +23,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.config import CORS_ORIGINS, ENVIRONMENT
+
 # Set up logging so background jobs can print messages.
 # Think of logging as the app writing in its diary -- helpful for debugging.
 logging.basicConfig(
@@ -72,13 +74,13 @@ app = FastAPI(
 
 # CORS = Cross-Origin Resource Sharing.
 # By default, a browser blocks requests from one website to another
-# (security feature). Our React frontend (localhost:3000) needs to talk
-# to our backend (localhost:8000), so we explicitly allow it.
+# (security feature). Our React frontend needs to talk to our backend,
+# so we explicitly allow it.
+# In development: allows http://localhost:3000
+# In production: set the CORS_ORIGINS environment variable to your real domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # React development server
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],   # Allow GET, POST, PUT, DELETE, etc.
     allow_headers=["*"],   # Allow any headers

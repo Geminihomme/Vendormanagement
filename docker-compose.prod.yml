@@ -1,0 +1,65 @@
+# PRODUCTION Docker Compose
+# ==========================
+# This is the "published book" version of our docker-compose.
+# It uses strong passwords, secure settings, and is ready for real users.
+#
+# HOW TO USE:
+#   1. Copy .env.example to .env and fill in your real values
+#   2. Run: docker compose -f docker-compose.prod.yml up -d --build
+#
+# The "-d" flag means "detached" — it runs in the background so you can
+# close your terminal and the app keeps running (like a store that stays
+# open after you leave).
+
+services:
+  # --- DATABASE ---
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-vendorapp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env file}
+      POSTGRES_DB: ${DB_NAME:-vendormanagement}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # NOTE: No "ports" exposed — only the backend can reach the database.
+    # This is a security best practice. In development we exposed port 5432
+    # so we could connect directly; in production, there's no need.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vendorapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- BACKEND ---
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-vendorapp}:${DB_PASSWORD}@db:5432/${DB_NAME:-vendormanagement}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env file}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      ENVIRONMENT: production
+    volumes:
+      - upload_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # --- FRONTEND ---
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-}
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  upload_data:
