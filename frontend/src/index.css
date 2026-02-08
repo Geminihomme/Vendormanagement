@@ -928,3 +928,150 @@ body {
   font-size: 22px;
   color: #1a1a2e;
 }
+
+/* --- RISK DASHBOARD --- */
+/* Score bars, badges, factor breakdowns for vendor risk assessment.
+   Colors follow the traffic light pattern:
+   Green = safe, Yellow = caution, Orange = warning, Red = danger */
+
+.risk-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+  display: inline-block;
+}
+
+.risk-badge-low {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.risk-badge-medium {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.risk-badge-high {
+  background-color: #ffe0cc;
+  color: #a34e00;
+}
+
+.risk-badge-critical {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Score bar — horizontal bar showing 0-100 visually */
+.risk-score-bar {
+  position: relative;
+  background: #e9ecef;
+  border-radius: 4px;
+  height: 8px;
+  width: 100%;
+  min-width: 80px;
+  overflow: hidden;
+}
+
+.risk-score-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.risk-score-label {
+  position: absolute;
+  top: -18px;
+  right: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+}
+
+/* Row highlighting by risk level */
+tr.risk-low { }
+tr.risk-medium { background-color: #fffdf5; }
+tr.risk-high { background-color: #fff8f0; }
+tr.risk-critical { background-color: #fff5f5; }
+
+/* --- RISK DETAIL VIEW --- */
+
+.risk-detail {
+  background: white;
+  border-radius: 8px;
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.risk-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.risk-detail-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.risk-detail-header h2 a {
+  color: #1a1a2e;
+  text-decoration: none;
+}
+
+.risk-detail-header h2 a:hover {
+  color: #0066cc;
+  text-decoration: underline;
+}
+
+.risk-detail-overall {
+  display: flex;
+  align-items: baseline;
+}
+
+.risk-detail-score {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.risk-detail-max {
+  font-size: 20px;
+  color: #888;
+  margin-left: 2px;
+}
+
+/* Factor cards — the breakdown of each scoring category */
+.risk-factors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.risk-factor-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.risk-factor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.risk-factor-desc {
+  font-size: 13px;
+  color: #666;
+  margin: 10px 0 0 0;
+  line-height: 1.5;
+}

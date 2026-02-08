@@ -30,6 +30,7 @@ import SearchPage from './pages/SearchPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ApprovalInbox from './pages/ApprovalInbox';
+import RiskDashboardPage from './pages/RiskDashboard';
 
 /**
  * NAVBAR COMPONENT
@@ -59,6 +60,7 @@ function Navbar() {
           <Link to="/renewals" className="navbar-link">Renewals</Link>
           <Link to="/analytics" className="navbar-link">Analytics</Link>
           <Link to="/approvals" className="navbar-link">Approvals</Link>
+          <Link to="/risk" className="navbar-link">Risk</Link>
           <Link to="/search" className="navbar-link">Search</Link>
 
           <div className="navbar-user">
@@ -104,6 +106,7 @@ function App() {
             <Route path="/analytics" element={<ProtectedRoute><SpendAnalytics /></ProtectedRoute>} />
             <Route path="/payments/new" element={<ProtectedRoute><PaymentForm /></ProtectedRoute>} />
             <Route path="/approvals" element={<ProtectedRoute><ApprovalInbox /></ProtectedRoute>} />
+            <Route path="/risk" element={<ProtectedRoute><RiskDashboardPage /></ProtectedRoute>} />
             <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
           </Routes>
         </div>
