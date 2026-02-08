@@ -334,3 +334,63 @@ export async function recalculateVendorRisk(vendorId: number): Promise<RiskScore
   const response = await api.post<RiskScoreResponse>(`/api/risk/vendor/${vendorId}/recalculate`);
   return response.data;
 }
+
+// --- REPORT DOWNLOAD FUNCTIONS ---
+// These use a special "blob" download pattern.
+// Normal API calls return JSON (text data). Report downloads return FILES
+// (binary data like Excel spreadsheets). "Blob" means "Binary Large Object" —
+// it's how browsers handle raw file data.
+//
+// The pattern works like this:
+// 1. Request the file from the backend (responseType: 'blob' tells axios to expect binary)
+// 2. Create a temporary URL pointing to the downloaded data
+// 3. Create a hidden <a> link, set its href to that URL, and "click" it
+// 4. The browser's download dialog appears with the file
+// 5. Clean up the temporary URL
+
+/**
+ * Helper: triggers a browser download from an API response.
+ * Think of it as creating an invisible "Download" button and clicking it.
+ */
+function triggerDownload(data: Blob, filename: string) {
+  const url = window.URL.createObjectURL(data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+// CSV Downloads — lightweight text files, open in any spreadsheet app
+export async function downloadVendorsCSV(): Promise<void> {
+  const response = await api.get('/api/reports/vendors/csv', { responseType: 'blob' });
+  triggerDownload(response.data, 'vendors.csv');
+}
+
+export async function downloadContractsCSV(): Promise<void> {
+  const response = await api.get('/api/reports/contracts/csv', { responseType: 'blob' });
+  triggerDownload(response.data, 'contracts.csv');
+}
+
+export async function downloadPaymentsCSV(): Promise<void> {
+  const response = await api.get('/api/reports/payments/csv', { responseType: 'blob' });
+  triggerDownload(response.data, 'payments.csv');
+}
+
+// Excel Downloads — rich formatted reports with multiple sheets, charts-ready
+export async function downloadSpendReportExcel(): Promise<void> {
+  const response = await api.get('/api/reports/spend/excel', { responseType: 'blob' });
+  triggerDownload(response.data, 'spend_report.xlsx');
+}
+
+export async function downloadExpiryReportExcel(): Promise<void> {
+  const response = await api.get('/api/reports/expiry/excel', { responseType: 'blob' });
+  triggerDownload(response.data, 'contract_expiry_report.xlsx');
+}
+
+export async function downloadRiskReportExcel(): Promise<void> {
+  const response = await api.get('/api/reports/risk/excel', { responseType: 'blob' });
+  triggerDownload(response.data, 'risk_report.xlsx');
+}

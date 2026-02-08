@@ -31,6 +31,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ApprovalInbox from './pages/ApprovalInbox';
 import RiskDashboardPage from './pages/RiskDashboard';
+import ReportsPage from './pages/ReportsPage';
 
 /**
  * NAVBAR COMPONENT
@@ -61,6 +62,7 @@ function Navbar() {
           <Link to="/analytics" className="navbar-link">Analytics</Link>
           <Link to="/approvals" className="navbar-link">Approvals</Link>
           <Link to="/risk" className="navbar-link">Risk</Link>
+          <Link to="/reports" className="navbar-link">Reports</Link>
           <Link to="/search" className="navbar-link">Search</Link>
 
           <div className="navbar-user">
@@ -107,6 +109,7 @@ function App() {
             <Route path="/payments/new" element={<ProtectedRoute><PaymentForm /></ProtectedRoute>} />
             <Route path="/approvals" element={<ProtectedRoute><ApprovalInbox /></ProtectedRoute>} />
             <Route path="/risk" element={<ProtectedRoute><RiskDashboardPage /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
             <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
           </Routes>
         </div>

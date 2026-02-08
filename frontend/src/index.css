@@ -1075,3 +1075,176 @@ tr.risk-critical { background-color: #fff5f5; }
   margin: 10px 0 0 0;
   line-height: 1.5;
 }
+
+/* ============================================================
+   REPORTS PAGE STYLES
+   ============================================================
+   These style the "print shop" page where users download reports.
+   Two visual themes: CSV cards (grey/simple) and Excel cards (green/rich).
+*/
+
+.page-subtitle {
+  color: #666;
+  font-size: 15px;
+  margin: -8px 0 24px 0;
+}
+
+/* Each section (CSV or Excel) gets a group heading */
+.report-section {
+  margin-bottom: 40px;
+}
+
+.report-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.report-section-desc {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 20px 0;
+}
+
+/* Format badges next to section headings */
+.report-format-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.report-format-badge.csv {
+  background-color: #e8ecf0;
+  color: #555;
+}
+
+.report-format-badge.excel {
+  background-color: #e6f4ea;
+  color: #1a7f37;
+}
+
+/* The grid that holds report cards */
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Individual report card */
+.report-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
+}
+
+.report-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.report-card-excel {
+  border-left: 4px solid #1a7f37;
+}
+
+.report-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.report-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.report-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.report-icon.csv {
+  background-color: #e8ecf0;
+  color: #555;
+}
+
+.report-icon.excel {
+  background-color: #e6f4ea;
+  color: #1a7f37;
+}
+
+.report-card-desc {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+  flex-grow: 1;
+}
+
+.report-download-btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+/* Help section at the bottom */
+.report-help {
+  background: #f8f9fb;
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid #e0e0e0;
+}
+
+.report-help-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.report-help-card h4 {
+  margin: 0 0 10px 0;
+  font-size: 15px;
+}
+
+.report-help-card ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* Success/error alerts for download feedback */
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.alert-success {
+  background-color: #e6f4ea;
+  color: #1a7f37;
+  border: 1px solid #b7e1c6;
+}
+
+.alert-danger {
+  background-color: #fde8e8;
+  color: #c53030;
+  border: 1px solid #f5c6c6;
+}

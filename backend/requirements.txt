@@ -11,3 +11,4 @@ python-dotenv==1.0.0    # Reads configuration from .env files
 python-multipart==0.0.6 # Handles file uploads (multipart/form-data parsing)
 apscheduler==3.10.4     # Runs background jobs on a schedule (like a cron job)
 python-jose[cryptography]==3.3.0  # Creates and verifies JWT tokens (the "wristband" for login sessions)
+openpyxl==3.1.2         # Creates Excel (.xlsx) files for report exports

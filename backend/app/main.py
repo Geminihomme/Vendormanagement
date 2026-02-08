@@ -31,7 +31,7 @@ logging.basicConfig(
 )
 
 from app.database import engine, Base
-from app.api import auth, vendors, users, contracts, notifications, payments, approvals, risk
+from app.api import auth, vendors, users, contracts, notifications, payments, approvals, risk, reports
 
 # Import all models so SQLAlchemy knows about them when creating tables.
 # Without these imports, the tables wouldn't be created.
@@ -102,6 +102,7 @@ app.include_router(notifications.router, prefix="/api/notifications", tags=["not
 app.include_router(payments.router, prefix="/api/payments", tags=["payments"])
 app.include_router(approvals.router, prefix="/api/approvals", tags=["approvals"])
 app.include_router(risk.router, prefix="/api/risk", tags=["risk"])
+app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 
 # Serve uploaded files (PDFs, etc.) as static files.
 # When someone visits /uploads/contracts/abc123.pdf, FastAPI serves the file
