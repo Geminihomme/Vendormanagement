@@ -29,6 +29,7 @@ function PaymentForm() {
   const [vendorId, setVendorId] = useState('');
   const [contractId, setContractId] = useState('');
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('USD');
   const [paymentDate, setPaymentDate] = useState(
     new Date().toISOString().split('T')[0] // Default to today
   );
@@ -82,6 +83,7 @@ function PaymentForm() {
         vendor_id: Number(vendorId),
         contract_id: contractId ? Number(contractId) : undefined,
         amount: parseFloat(amount),
+        currency,
         payment_date: paymentDate,
         invoice_number: invoiceNumber || undefined,
         description: description || undefined,
@@ -141,8 +143,8 @@ function PaymentForm() {
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label>Amount ($) *</label>
+            <div className="form-group" style={{ flex: 2 }}>
+              <label>Amount *</label>
               <input
                 type="number"
                 step="0.01"
@@ -153,7 +155,15 @@ function PaymentForm() {
                 required
               />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Currency</label>
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (&euro;)</option>
+                <option value="GBP">GBP (&pound;)</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ flex: 2 }}>
               <label>Payment Date *</label>
               <input
                 type="date"

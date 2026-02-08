@@ -18,6 +18,7 @@ export interface User {
   email: string;
   role: string;
   is_active: boolean;
+  preferred_currency: string;  // "USD", "EUR", or "GBP"
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +29,7 @@ export interface UserCreate {
   email: string;
   password: string;    // Sent to server, but never returned
   role?: string;
+  preferred_currency?: string;
 }
 
 // What we send when UPDATING a user's profile
@@ -36,4 +38,5 @@ export interface UserUpdate {
   email?: string;
   role?: string;
   is_active?: boolean;
+  preferred_currency?: string;
 }

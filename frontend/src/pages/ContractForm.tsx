@@ -43,6 +43,7 @@ function ContractForm() {
   const [description, setDescription] = useState('');
   const [contractNumber, setContractNumber] = useState('');
   const [value, setValue] = useState('');
+  const [currency, setCurrency] = useState('USD');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('draft');
@@ -101,6 +102,7 @@ function ContractForm() {
         contract_number: contractNumber.trim() || undefined,
         vendor_id: Number(vendorId),
         value: value ? parseFloat(value) : undefined,
+        currency,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
         status,
@@ -172,16 +174,26 @@ function ContractForm() {
         <div className="form-section">
           <h3>Value & Timeline</h3>
 
-          <div className="form-group">
-            <label>Contract Value ($)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="e.g., 50000"
-            />
+          <div className="form-row">
+            <div className="form-group" style={{ flex: 2 }}>
+              <label>Contract Value</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="e.g., 50000"
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Currency</label>
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (&euro;)</option>
+                <option value="GBP">GBP (&pound;)</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-row">

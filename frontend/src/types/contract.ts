@@ -24,6 +24,7 @@ export interface Contract {
   created_by_id: number | null;
   created_by_name: string | null;   // Included so we can display who created it
   value: number | null;
+  currency: string;            // "USD", "EUR", or "GBP"
   start_date: string | null;
   end_date: string | null;
   status: string;
@@ -40,6 +41,7 @@ export interface ContractCreate {
   vendor_id: number;                // Required: which vendor is this contract with?
   created_by_id?: number;
   value?: number;
+  currency?: string;
   start_date?: string;
   end_date?: string;
   status?: string;
@@ -53,6 +55,7 @@ export interface ContractUpdate {
   contract_number?: string;
   vendor_id?: number;
   value?: number;
+  currency?: string;
   start_date?: string;
   end_date?: string;
   status?: string;

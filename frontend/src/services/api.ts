@@ -256,20 +256,25 @@ export async function getVendorPayments(vendorId: number): Promise<Payment[]> {
   return response.data;
 }
 
-export async function getSpendSummary(): Promise<SpendSummary> {
-  const response = await api.get<SpendSummary>('/api/payments/analytics/summary');
-  return response.data;
-}
-
-export async function getSpendByVendor(): Promise<VendorSpendSummary[]> {
-  const response = await api.get<VendorSpendSummary[]>('/api/payments/analytics/by-vendor');
-  return response.data;
-}
-
-export async function getMonthlySpend(year?: number): Promise<MonthlySpend[]> {
-  const response = await api.get<MonthlySpend[]>('/api/payments/analytics/monthly', {
-    params: year ? { year } : {},
+export async function getSpendSummary(currency?: string): Promise<SpendSummary> {
+  const response = await api.get<SpendSummary>('/api/payments/analytics/summary', {
+    params: currency ? { currency } : {},
   });
+  return response.data;
+}
+
+export async function getSpendByVendor(currency?: string): Promise<VendorSpendSummary[]> {
+  const response = await api.get<VendorSpendSummary[]>('/api/payments/analytics/by-vendor', {
+    params: currency ? { currency } : {},
+  });
+  return response.data;
+}
+
+export async function getMonthlySpend(year?: number, currency?: string): Promise<MonthlySpend[]> {
+  const params: Record<string, any> = {};
+  if (year) params.year = year;
+  if (currency) params.currency = currency;
+  const response = await api.get<MonthlySpend[]>('/api/payments/analytics/monthly', { params });
   return response.data;
 }
 
@@ -393,4 +398,35 @@ export async function downloadExpiryReportExcel(): Promise<void> {
 export async function downloadRiskReportExcel(): Promise<void> {
   const response = await api.get('/api/reports/risk/excel', { responseType: 'blob' });
   triggerDownload(response.data, 'risk_report.xlsx');
+}
+
+// --- CURRENCY API FUNCTIONS ---
+// These manage exchange rates and user currency preferences.
+// Think of it as the controls on an international shopping site:
+// "Show prices in EUR" / "View exchange rates"
+
+export interface ExchangeRate {
+  currency_code: string;
+  rate_to_usd: number;
+  updated_at: string | null;
+}
+
+export interface SupportedCurrency {
+  code: string;
+  name: string;
+  symbol: string;
+}
+
+export async function getExchangeRates(): Promise<ExchangeRate[]> {
+  const response = await api.get<ExchangeRate[]>('/api/currency/rates');
+  return response.data;
+}
+
+export async function getSupportedCurrencies(): Promise<SupportedCurrency[]> {
+  const response = await api.get<SupportedCurrency[]>('/api/currency/supported');
+  return response.data;
+}
+
+export async function updateCurrencyPreference(preferred_currency: string): Promise<void> {
+  await api.put('/api/currency/preference', { preferred_currency });
 }

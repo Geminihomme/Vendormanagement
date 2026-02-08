@@ -1248,3 +1248,58 @@ tr.risk-critical { background-color: #fff5f5; }
   color: #c53030;
   border: 1px solid #f5c6c6;
 }
+
+/* ============================================================
+   CURRENCY SWITCHER STYLES
+   ============================================================
+   The row of buttons on the analytics page: [$ USD] [€ EUR] [£ GBP]
+   Like the language/currency toggle on an international website.
+*/
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.currency-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f5f7fa;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.currency-switcher label {
+  font-size: 13px;
+  color: #666;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.currency-btn {
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #555;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.currency-btn:hover {
+  background: white;
+  border-color: #ccc;
+}
+
+.currency-btn-active {
+  background: white;
+  border-color: #0066cc;
+  color: #0066cc;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 102, 204, 0.15);
+}

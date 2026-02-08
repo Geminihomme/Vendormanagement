@@ -1,6 +1,6 @@
 /**
- * SPEND ANALYTICS DASHBOARD
- * ===========================
+ * SPEND ANALYTICS DASHBOARD (Now with Multi-Currency!)
+ * =====================================================
  * This page shows financial insights about vendor spending.
  *
  * IT HAS FOUR SECTIONS:
@@ -9,16 +9,18 @@
  * 3. Spend by Vendor — Horizontal bars showing who we spend the most with
  * 4. Recent Payments — A table of the latest payment records
  *
- * HOW CHARTS WORK (Recharts):
- * Recharts takes an array of data objects and draws visual charts.
- * For example, given: [{month: "Jan", total: 5000}, {month: "Feb", total: 8000}]
- * It draws bars with heights proportional to the totals.
- * Think of it like how Excel turns a column of numbers into a bar chart.
+ * MULTI-CURRENCY FEATURE:
+ * Since we work with EMEA vendors, payments come in different currencies
+ * (USD, EUR, GBP). The analytics dashboard converts all amounts to one
+ * display currency so you can compare apples to apples.
  *
- * We use Recharts because:
- * - It's built specifically for React (works as components)
- * - It's responsive (resizes with the window)
- * - It handles tooltips, labels, and axes automatically
+ * Think of it like a travel expense report: you paid hotels in GBP,
+ * taxis in EUR, and flights in USD. To see your "total trip cost,"
+ * you need to convert everything to one currency first.
+ *
+ * The currency switcher at the top lets you choose which currency
+ * to view everything in — like clicking "Show prices in EUR"
+ * on an international shopping website.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -33,7 +35,9 @@ import {
   getSpendByVendor,
   getMonthlySpend,
   getPayments,
+  updateCurrencyPreference,
 } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 // Colors for the vendor pie chart slices
 const CHART_COLORS = [
@@ -41,7 +45,16 @@ const CHART_COLORS = [
   '#20c997', '#e83e8c', '#17a2b8', '#ffc107', '#6c757d',
 ];
 
+// Currency symbols for display
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  EUR: '\u20ac',
+  GBP: '\u00a3',
+};
+
 function SpendAnalytics() {
+  const { user } = useAuth();
+
   // --- STATE ---
   const [summary, setSummary] = useState<SpendSummary | null>(null);
   const [vendorSpend, setVendorSpend] = useState<VendorSpendSummary[]>([]);
@@ -50,18 +63,23 @@ function SpendAnalytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // The currently selected display currency
+  const [displayCurrency, setDisplayCurrency] = useState(
+    user?.preferred_currency || 'USD'
+  );
+
   // --- LOAD DATA ---
   useEffect(() => {
     loadAnalytics();
-  }, []);
+  }, [displayCurrency]); // Reload when currency changes
 
   async function loadAnalytics() {
     try {
       setLoading(true);
       const [summaryData, vendorData, monthlyData, paymentsData] = await Promise.all([
-        getSpendSummary(),
-        getSpendByVendor(),
-        getMonthlySpend(),
+        getSpendSummary(displayCurrency),
+        getSpendByVendor(displayCurrency),
+        getMonthlySpend(undefined, displayCurrency),
         getPayments(),
       ]);
       setSummary(summaryData);
@@ -75,11 +93,31 @@ function SpendAnalytics() {
     }
   }
 
+  // When user switches the display currency
+  async function handleCurrencyChange(newCurrency: string) {
+    setDisplayCurrency(newCurrency);
+    // Also save preference to backend so it persists across sessions
+    try {
+      await updateCurrencyPreference(newCurrency);
+    } catch {
+      // Non-critical: preference just won't persist
+    }
+  }
+
   // --- HELPERS ---
+  /**
+   * Format a number as currency.
+   *
+   * Intl.NumberFormat is a built-in browser API that knows how to format
+   * numbers for different locales and currencies. It handles:
+   * - The right symbol ($, €, £)
+   * - The right position (€100 vs $100 vs 100£)
+   * - Thousands separators (1,000 vs 1.000)
+   */
   function formatCurrency(value: number): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: displayCurrency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -91,6 +129,19 @@ function SpendAnalytics() {
       month: 'short',
       day: 'numeric',
     });
+  }
+
+  /**
+   * Format a payment amount with its ORIGINAL currency.
+   * Used in the recent payments table where each row may be in a different currency.
+   */
+  function formatPaymentAmount(amount: number, currency: string): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
   }
 
   // Custom tooltip for the monthly chart
@@ -107,16 +158,33 @@ function SpendAnalytics() {
     return null;
   }
 
+  const symbol = CURRENCY_SYMBOLS[displayCurrency] || displayCurrency;
+
   if (loading) return <div className="loading">Loading analytics...</div>;
 
   return (
     <div>
-      {/* --- PAGE HEADER --- */}
+      {/* --- PAGE HEADER with Currency Switcher --- */}
       <div className="page-header">
         <h1>Spend Analytics</h1>
-        <Link to="/payments/new" className="btn btn-primary">
-          + Add Payment
-        </Link>
+        <div className="page-header-actions">
+          {/* Currency Switcher — like "Show prices in EUR" on a website */}
+          <div className="currency-switcher">
+            <label>Display in:</label>
+            {['USD', 'EUR', 'GBP'].map((code) => (
+              <button
+                key={code}
+                className={`currency-btn ${displayCurrency === code ? 'currency-btn-active' : ''}`}
+                onClick={() => handleCurrencyChange(code)}
+              >
+                {CURRENCY_SYMBOLS[code]} {code}
+              </button>
+            ))}
+          </div>
+          <Link to="/payments/new" className="btn btn-primary">
+            + Add Payment
+          </Link>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -126,7 +194,7 @@ function SpendAnalytics() {
         <div className="stats-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
           <div className="stat-card stat-total">
             <div className="stat-number">{formatCurrency(summary.total_spent)}</div>
-            <div className="stat-label">Total Spent</div>
+            <div className="stat-label">Total Spent ({displayCurrency})</div>
           </div>
           <div className="stat-card stat-attention">
             <div className="stat-number">{summary.payment_count}</div>
@@ -136,7 +204,7 @@ function SpendAnalytics() {
             <div className="stat-number" style={{ color: '#6f42c1' }}>
               {formatCurrency(summary.average_payment)}
             </div>
-            <div className="stat-label">Average Payment</div>
+            <div className="stat-label">Average Payment ({displayCurrency})</div>
           </div>
           <div className="stat-card" style={{ borderTopColor: '#20c997' }}>
             <div className="stat-number" style={{ color: '#20c997' }}>
@@ -149,7 +217,7 @@ function SpendAnalytics() {
 
       {/* --- MONTHLY SPENDING CHART --- */}
       <div className="card" style={{ marginBottom: '24px' }}>
-        <h3>Monthly Spending</h3>
+        <h3>Monthly Spending ({displayCurrency})</h3>
         {monthlySpend.length === 0 ? (
           <p className="text-muted">No payment data yet. Add payments to see the chart.</p>
         ) : (
@@ -163,7 +231,7 @@ function SpendAnalytics() {
               />
               <YAxis
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value: number) => `${symbol}${(value / 1000).toFixed(0)}k`}
               />
               <Tooltip content={<MonthlyTooltip />} />
               <Bar dataKey="total_spent" fill="#0066cc" radius={[4, 4, 0, 0]} />
@@ -177,7 +245,7 @@ function SpendAnalytics() {
 
         {/* --- SPEND BY VENDOR (Pie Chart) --- */}
         <div className="card">
-          <h3>Spend by Vendor</h3>
+          <h3>Spend by Vendor ({displayCurrency})</h3>
           {vendorSpend.length === 0 ? (
             <p className="text-muted">No vendor spending data yet.</p>
           ) : (
@@ -212,7 +280,7 @@ function SpendAnalytics() {
                 <thead>
                   <tr>
                     <th>Vendor</th>
-                    <th>Total Spent</th>
+                    <th>Total Spent ({displayCurrency})</th>
                     <th>Payments</th>
                   </tr>
                 </thead>
@@ -256,8 +324,10 @@ function SpendAnalytics() {
                 {recentPayments.slice(0, 10).map(p => (
                   <tr key={p.id}>
                     <td>{formatDate(p.payment_date)}</td>
-                    <td>{p.vendor_name || '—'}</td>
-                    <td><strong>{formatCurrency(p.amount)}</strong></td>
+                    <td>{p.vendor_name || '\u2014'}</td>
+                    <td>
+                      <strong>{formatPaymentAmount(p.amount, p.currency)}</strong>
+                    </td>
                     <td>
                       <span className={`status-badge status-${p.status === 'paid' ? 'active' : p.status === 'pending' ? 'pending' : 'inactive'}`}>
                         {p.status}
