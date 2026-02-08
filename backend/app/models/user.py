@@ -90,6 +90,11 @@ class User(Base):
     # Account status -- lets admins disable accounts without deleting them
     is_active = Column(Boolean, default=True, nullable=False)
 
+    # Preferred display currency -- what currency the user wants to see
+    # in dashboards and analytics. Like choosing "Show prices in EUR"
+    # on an international shopping website.
+    preferred_currency = Column(String(3), nullable=False, default="USD")
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -49,6 +49,7 @@ class UserCreate(BaseModel):
     email: str = Field(..., max_length=255, description="Login email (must be unique)")
     password: str = Field(..., min_length=8, max_length=100, description="Password (min 8 chars)")
     role: str = Field("viewer", description="User role: admin, manager, or viewer")
+    preferred_currency: str = Field("USD", max_length=3, description="Display currency: USD, EUR, or GBP")
 
 
 class UserUpdate(BaseModel):
@@ -60,6 +61,7 @@ class UserUpdate(BaseModel):
     email: str | None = Field(None, max_length=255)
     role: str | None = Field(None, max_length=20)
     is_active: bool | None = None
+    preferred_currency: str | None = Field(None, max_length=3)
 
 
 class UserResponse(BaseModel):
@@ -72,6 +74,7 @@ class UserResponse(BaseModel):
     email: str
     role: str
     is_active: bool
+    preferred_currency: str = "USD"
     created_at: datetime
     updated_at: datetime
 

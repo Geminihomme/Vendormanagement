@@ -31,7 +31,7 @@ logging.basicConfig(
 )
 
 from app.database import engine, Base
-from app.api import auth, vendors, users, contracts, notifications, payments, approvals, risk, reports
+from app.api import auth, vendors, users, contracts, notifications, payments, approvals, risk, reports, currency
 
 # Import all models so SQLAlchemy knows about them when creating tables.
 # Without these imports, the tables wouldn't be created.
@@ -42,6 +42,7 @@ import app.models.notification # noqa: F401
 import app.models.payment      # noqa: F401
 import app.models.approval     # noqa: F401
 import app.models.risk_assessment  # noqa: F401
+import app.models.exchange_rate    # noqa: F401
 
 # LIFESPAN: What happens when the app starts up and shuts down.
 # This is where we start and stop the background scheduler.
@@ -88,6 +89,14 @@ app.add_middleware(
 # but this is simpler for getting started.
 Base.metadata.create_all(bind=engine)
 
+# Seed default exchange rates (USD, EUR, GBP) on first run.
+# Like stocking the currency exchange board on opening day.
+from app.database import SessionLocal
+from app.services.currency_service import seed_exchange_rates
+_seed_db = SessionLocal()
+seed_exchange_rates(_seed_db)
+_seed_db.close()
+
 # Register all API routes. Each line tells FastAPI:
 # "Any request starting with /api/X should be handled by module X."
 # The tags help organize the auto-generated API docs at /docs
@@ -103,6 +112,7 @@ app.include_router(payments.router, prefix="/api/payments", tags=["payments"])
 app.include_router(approvals.router, prefix="/api/approvals", tags=["approvals"])
 app.include_router(risk.router, prefix="/api/risk", tags=["risk"])
 app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
+app.include_router(currency.router, prefix="/api/currency", tags=["currency"])
 
 # Serve uploaded files (PDFs, etc.) as static files.
 # When someone visits /uploads/contracts/abc123.pdf, FastAPI serves the file

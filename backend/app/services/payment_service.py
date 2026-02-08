@@ -16,10 +16,20 @@ Subtotals by vendor              SELECT vendor_id, SUM(amount) GROUP BY vendor_i
 SQLAlchemy lets us write these queries in Python instead of raw SQL:
   db.query(func.sum(Payment.amount)).filter(Payment.vendor_id == 1)
 
+MULTI-CURRENCY ANALYTICS:
+===========================
+Since payments can be in different currencies (USD, EUR, GBP), we can't
+just SUM them directly — that would be like adding dollars and euros.
+
+Instead, we convert each payment to the user's DISPLAY currency first,
+then sum. Think of it like a currency exchange at the airport:
+before counting your total, you exchange all your leftover bills into
+one currency so you can add them up.
+
 KEY ANALYTICS WE CALCULATE:
-1. Total spend per vendor    (GROUP BY vendor_id)
-2. Monthly spend over time   (GROUP BY year, month)
-3. Overall spend summary     (SUM, COUNT, AVG across all payments)
+1. Total spend per vendor    (GROUP BY vendor_id, convert amounts)
+2. Monthly spend over time   (GROUP BY year, month, convert amounts)
+3. Overall spend summary     (SUM, COUNT, AVG — all in display currency)
 """
 
 import calendar
@@ -31,6 +41,7 @@ from app.models.payment import Payment
 from app.models.vendor import Vendor
 from app.models.contract import Contract
 from app.schemas.payment import PaymentCreate, PaymentUpdate
+from app.services.currency_service import convert, get_rates_dict
 
 
 def get_payments(db: Session, skip: int = 0, limit: int = 100) -> list[dict]:
@@ -102,194 +113,186 @@ def delete_payment(db: Session, payment_id: int) -> bool:
 # ANALYTICS FUNCTIONS (The "Spreadsheet Formulas")
 # ====================================================================
 
-def get_spend_by_vendor(db: Session) -> list[dict]:
+def get_spend_by_vendor(db: Session, display_currency: str = "USD") -> list[dict]:
     """
-    Calculate total spending PER VENDOR.
+    Calculate total spending PER VENDOR, converted to display_currency.
 
     THIS IS LIKE A PIVOT TABLE IN EXCEL:
     If your spreadsheet has columns: [Vendor, Amount]
     A pivot table would group by Vendor and SUM the Amount column.
 
-    The SQL equivalent:
-        SELECT vendor_id, SUM(amount), COUNT(*), AVG(amount), MAX(payment_date)
-        FROM payments
-        WHERE status = 'paid'
-        GROUP BY vendor_id
-
-    SQLAlchemy translation (what we write in Python):
-        db.query(
-            Payment.vendor_id,
-            func.sum(Payment.amount),       # = Excel's SUM()
-            func.count(Payment.id),         # = Excel's COUNT()
-            func.avg(Payment.amount),       # = Excel's AVERAGE()
-            func.max(Payment.payment_date), # = Excel's MAX()
-        ).group_by(Payment.vendor_id)
+    MULTI-CURRENCY TWIST:
+    Since each payment might be in a different currency (like getting
+    receipts in USD, EUR, and GBP from a business trip), we can't
+    just SUM them directly. We convert each to the target currency first.
     """
-    results = (
-        db.query(
-            Payment.vendor_id,
-            func.sum(Payment.amount).label("total_spent"),
-            func.count(Payment.id).label("payment_count"),
-            func.avg(Payment.amount).label("avg_payment"),
-            func.max(Payment.payment_date).label("last_payment"),
-        )
+    rates = get_rates_dict(db)
+
+    # Get all paid payments (we need individual rows for currency conversion)
+    payments = (
+        db.query(Payment)
         .filter(Payment.status == "paid")
-        .group_by(Payment.vendor_id)
-        .order_by(func.sum(Payment.amount).desc())  # Biggest spender first
         .all()
     )
 
+    # Group by vendor and convert as we go
+    vendor_totals: dict[int, dict] = {}
+    for p in payments:
+        vid = p.vendor_id
+        converted = convert(p.amount, getattr(p, "currency", "USD"), display_currency, rates)
+
+        if vid not in vendor_totals:
+            vendor_totals[vid] = {
+                "total": 0.0,
+                "count": 0,
+                "last_date": None,
+            }
+
+        vendor_totals[vid]["total"] += converted
+        vendor_totals[vid]["count"] += 1
+        last = vendor_totals[vid]["last_date"]
+        if last is None or p.payment_date > last:
+            vendor_totals[vid]["last_date"] = p.payment_date
+
     summaries = []
-    for row in results:
-        vendor = db.query(Vendor).filter(Vendor.id == row.vendor_id).first()
+    for vid, data in vendor_totals.items():
+        vendor = db.query(Vendor).filter(Vendor.id == vid).first()
         summaries.append({
-            "vendor_id": row.vendor_id,
+            "vendor_id": vid,
             "vendor_name": vendor.name if vendor else "Unknown",
-            "total_spent": round(float(row.total_spent), 2),
-            "payment_count": row.payment_count,
-            "average_payment": round(float(row.avg_payment), 2),
-            "last_payment_date": row.last_payment,
+            "total_spent": round(data["total"], 2),
+            "payment_count": data["count"],
+            "average_payment": round(data["total"] / data["count"], 2) if data["count"] else 0,
+            "last_payment_date": data["last_date"],
+            "display_currency": display_currency,
         })
 
+    # Sort by total spent descending (biggest spender first)
+    summaries.sort(key=lambda x: x["total_spent"], reverse=True)
     return summaries
 
 
-def get_monthly_spend(db: Session, year: int | None = None) -> list[dict]:
+def get_monthly_spend(db: Session, year: int | None = None, display_currency: str = "USD") -> list[dict]:
     """
-    Calculate total spending PER MONTH.
+    Calculate total spending PER MONTH, converted to display_currency.
 
     THIS IS LIKE A MONTHLY BANK STATEMENT:
-    "January: $15,000 (5 payments)"
-    "February: $12,000 (3 payments)"
-    "March: $18,000 (7 payments)"
+    "January: 15,000 EUR (5 payments)"
+    "February: 12,000 EUR (3 payments)"
 
-    HOW EXTRACT() WORKS:
-    extract('month', payment_date) pulls just the month number from a date.
-    extract('year', payment_date) pulls just the year.
-
-    It's like using MONTH() and YEAR() functions in Excel:
-    =MONTH(A2) returns 1 for January, 2 for February, etc.
-
-    The SQL equivalent:
-        SELECT EXTRACT(year FROM payment_date), EXTRACT(month FROM payment_date),
-               SUM(amount), COUNT(*)
-        FROM payments
-        WHERE status = 'paid'
-        GROUP BY year, month
-        ORDER BY year, month
+    MULTI-CURRENCY NOTE:
+    We fetch individual payments and convert each one before summing
+    by month, rather than using SQL SUM() directly. This is like
+    exchanging each receipt into EUR before adding up your monthly total.
     """
-    query = (
-        db.query(
-            extract('year', Payment.payment_date).label("year"),
-            extract('month', Payment.payment_date).label("month"),
-            func.sum(Payment.amount).label("total_spent"),
-            func.count(Payment.id).label("payment_count"),
-        )
-        .filter(Payment.status == "paid")
-    )
+    rates = get_rates_dict(db)
 
+    query = db.query(Payment).filter(Payment.status == "paid")
     if year:
         query = query.filter(extract('year', Payment.payment_date) == year)
 
-    results = (
-        query
-        .group_by(
-            extract('year', Payment.payment_date),
-            extract('month', Payment.payment_date),
-        )
-        .order_by(
-            extract('year', Payment.payment_date),
-            extract('month', Payment.payment_date),
-        )
-        .all()
-    )
+    payments = query.all()
 
+    # Group by (year, month) and convert amounts
+    monthly_buckets: dict[tuple[int, int], dict] = {}
+    for p in payments:
+        yr = p.payment_date.year
+        mo = p.payment_date.month
+        key = (yr, mo)
+        converted = convert(p.amount, getattr(p, "currency", "USD"), display_currency, rates)
+
+        if key not in monthly_buckets:
+            monthly_buckets[key] = {"total": 0.0, "count": 0}
+        monthly_buckets[key]["total"] += converted
+        monthly_buckets[key]["count"] += 1
+
+    # Sort by date and build results
     monthly_data = []
-    for row in results:
-        month_num = int(row.month)
+    for (yr, mo) in sorted(monthly_buckets.keys()):
+        data = monthly_buckets[(yr, mo)]
         monthly_data.append({
-            "year": int(row.year),
-            "month": month_num,
-            "month_name": calendar.month_name[month_num],  # 1 -> "January"
-            "total_spent": round(float(row.total_spent), 2),
-            "payment_count": row.payment_count,
+            "year": yr,
+            "month": mo,
+            "month_name": calendar.month_name[mo],
+            "total_spent": round(data["total"], 2),
+            "payment_count": data["count"],
+            "display_currency": display_currency,
         })
 
     return monthly_data
 
 
-def get_spend_summary(db: Session) -> dict:
+def get_spend_summary(db: Session, display_currency: str = "USD") -> dict:
     """
-    Overall spending summary — the "executive report."
+    Overall spending summary — the "executive report," converted to display_currency.
 
     Like the TOTAL row at the bottom of a spreadsheet:
-    Total Spent: $250,000
+    Total Spent: 250,000 EUR
     Number of Payments: 47
-    Average Payment: $5,319.15
+    Average Payment: 5,319.15 EUR
     Number of Vendors: 8
     """
-    result = (
-        db.query(
-            func.sum(Payment.amount).label("total_spent"),
-            func.count(Payment.id).label("payment_count"),
-            func.avg(Payment.amount).label("avg_payment"),
-        )
-        .filter(Payment.status == "paid")
-        .first()
-    )
+    rates = get_rates_dict(db)
 
-    vendor_count = (
-        db.query(func.count(func.distinct(Payment.vendor_id)))
-        .filter(Payment.status == "paid")
-        .scalar()
-    )
+    payments = db.query(Payment).filter(Payment.status == "paid").all()
+
+    total = 0.0
+    vendor_ids = set()
+    for p in payments:
+        total += convert(p.amount, getattr(p, "currency", "USD"), display_currency, rates)
+        vendor_ids.add(p.vendor_id)
+
+    count = len(payments)
 
     return {
-        "total_spent": round(float(result.total_spent or 0), 2),
-        "payment_count": result.payment_count or 0,
-        "average_payment": round(float(result.avg_payment or 0), 2),
-        "vendor_count": vendor_count or 0,
+        "total_spent": round(total, 2),
+        "payment_count": count,
+        "average_payment": round(total / count, 2) if count else 0,
+        "vendor_count": len(vendor_ids),
+        "display_currency": display_currency,
     }
 
 
-def get_vendor_monthly_spend(db: Session, vendor_id: int) -> list[dict]:
+def get_vendor_monthly_spend(db: Session, vendor_id: int, display_currency: str = "USD") -> list[dict]:
     """
-    Monthly spending for a SPECIFIC vendor.
+    Monthly spending for a SPECIFIC vendor, converted to display_currency.
     Used to show the line chart on a vendor's detail page.
     """
-    results = (
-        db.query(
-            extract('year', Payment.payment_date).label("year"),
-            extract('month', Payment.payment_date).label("month"),
-            func.sum(Payment.amount).label("total_spent"),
-            func.count(Payment.id).label("payment_count"),
-        )
+    rates = get_rates_dict(db)
+
+    payments = (
+        db.query(Payment)
         .filter(Payment.vendor_id == vendor_id, Payment.status == "paid")
-        .group_by(
-            extract('year', Payment.payment_date),
-            extract('month', Payment.payment_date),
-        )
-        .order_by(
-            extract('year', Payment.payment_date),
-            extract('month', Payment.payment_date),
-        )
         .all()
     )
 
+    monthly_buckets: dict[tuple[int, int], dict] = {}
+    for p in payments:
+        yr = p.payment_date.year
+        mo = p.payment_date.month
+        key = (yr, mo)
+        converted = convert(p.amount, getattr(p, "currency", "USD"), display_currency, rates)
+
+        if key not in monthly_buckets:
+            monthly_buckets[key] = {"total": 0.0, "count": 0}
+        monthly_buckets[key]["total"] += converted
+        monthly_buckets[key]["count"] += 1
+
     return [
         {
-            "year": int(row.year),
-            "month": int(row.month),
-            "month_name": calendar.month_name[int(row.month)],
-            "total_spent": round(float(row.total_spent), 2),
-            "payment_count": row.payment_count,
+            "year": yr,
+            "month": mo,
+            "month_name": calendar.month_name[mo],
+            "total_spent": round(data["total"], 2),
+            "payment_count": data["count"],
+            "display_currency": display_currency,
         }
-        for row in results
+        for (yr, mo), data in sorted(monthly_buckets.items())
     ]
 
 
 def _enrich_payment(payment: Payment) -> dict:
-    """Add vendor_name and contract_title to a payment."""
+    """Add vendor_name, contract_title, and currency to a payment."""
     return {
         "id": payment.id,
         "vendor_id": payment.vendor_id,
@@ -297,6 +300,7 @@ def _enrich_payment(payment: Payment) -> dict:
         "contract_id": payment.contract_id,
         "contract_title": payment.contract.title if payment.contract else None,
         "amount": payment.amount,
+        "currency": getattr(payment, "currency", "USD"),
         "payment_date": payment.payment_date,
         "invoice_number": payment.invoice_number,
         "description": payment.description,

@@ -108,9 +108,14 @@ class Contract(Base):
     # know who originally created them.
 
     # Financial details
-    value = Column(Float, nullable=True)             # Total contract value in dollars
+    value = Column(Float, nullable=True)             # Total contract value
     # Float is used for simplicity. In a real financial system, you'd use
     # Decimal for exact precision (floats can have tiny rounding errors).
+
+    # Currency — which currency the value is stored in (ISO 4217 code).
+    # Like a price tag in a store: the number alone isn't enough,
+    # you need to know if it's $50 or 50 or 50.
+    currency = Column(String(3), nullable=False, default="USD")
 
     # Timeline
     start_date = Column(Date, nullable=True)         # When the contract begins

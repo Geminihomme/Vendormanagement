@@ -93,6 +93,11 @@ class Payment(Base):
     # --- HOW MUCH did we pay? ---
     amount = Column(Float, nullable=False)
 
+    # --- IN WHAT CURRENCY? ---
+    # Like writing "USD" next to $500 on a check — the number alone
+    # doesn't tell you which currency it's in.
+    currency = Column(String(3), nullable=False, default="USD")
+
     # --- WHEN did we pay? ---
     payment_date = Column(Date, nullable=False)
 

@@ -54,40 +54,64 @@ router = APIRouter()
 # "analytics" would be treated as a payment ID and cause an error.
 
 @router.get("/analytics/summary")
-def get_spend_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_spend_summary(
+    currency: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Overall spending summary: total spent, payment count, average, vendor count.
     Like the "Grand Total" row at the bottom of a spreadsheet.
+
+    Pass ?currency=EUR to see totals in euros. Defaults to user's preferred currency.
     """
-    return payment_service.get_spend_summary(db)
+    display = currency or current_user.preferred_currency or "USD"
+    return payment_service.get_spend_summary(db, display_currency=display)
 
 
 @router.get("/analytics/by-vendor")
-def get_spend_by_vendor(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_spend_by_vendor(
+    currency: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Total spending grouped by vendor, sorted by biggest spender first.
-    Like a pivot table: "Acme: $50,000 | CleanCo: $12,000 | SecureIT: $8,000"
+    Like a pivot table: "Acme: 50,000 EUR | CleanCo: 12,000 EUR"
+
+    Pass ?currency=GBP to see totals in pounds. Defaults to user's preferred currency.
     """
-    return payment_service.get_spend_by_vendor(db)
+    display = currency or current_user.preferred_currency or "USD"
+    return payment_service.get_spend_by_vendor(db, display_currency=display)
 
 
 @router.get("/analytics/monthly")
 def get_monthly_spend(
     year: int | None = None,
+    currency: str | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
     Monthly spending over time. Optionally filter by year.
     Powers the bar/line chart on the analytics dashboard.
+
+    Pass ?currency=EUR to see totals in euros. Defaults to user's preferred currency.
     """
-    return payment_service.get_monthly_spend(db, year=year)
+    display = currency or current_user.preferred_currency or "USD"
+    return payment_service.get_monthly_spend(db, year=year, display_currency=display)
 
 
 @router.get("/analytics/vendor/{vendor_id}/monthly")
-def get_vendor_monthly_spend(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_vendor_monthly_spend(
+    vendor_id: int,
+    currency: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Monthly spending for a specific vendor. Powers the vendor drill-down chart."""
-    return payment_service.get_vendor_monthly_spend(db, vendor_id)
+    display = currency or current_user.preferred_currency or "USD"
+    return payment_service.get_vendor_monthly_spend(db, vendor_id, display_currency=display)
 
 
 # ====================================================================

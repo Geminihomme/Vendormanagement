@@ -40,8 +40,9 @@ class ContractCreate(BaseModel):
     contract_number: str | None = Field(None, max_length=100, description="e.g., CNT-2025-001")
     vendor_id: int = Field(..., description="ID of the vendor this contract is with")
     created_by_id: int | None = Field(None, description="ID of the user creating this")
-    value: float | None = Field(None, ge=0, description="Contract value in dollars (must be >= 0)")
+    value: float | None = Field(None, ge=0, description="Contract value (must be >= 0)")
     # ge=0 means "greater than or equal to 0" -- no negative contracts!
+    currency: str = Field("USD", max_length=3, description="Currency code: USD, EUR, or GBP")
     start_date: date | None = Field(None, description="When the contract begins")
     end_date: date | None = Field(None, description="When the contract expires")
     status: str = Field("draft", description="Contract status")
@@ -58,6 +59,7 @@ class ContractUpdate(BaseModel):
     contract_number: str | None = Field(None, max_length=100)
     vendor_id: int | None = None
     value: float | None = Field(None, ge=0)
+    currency: str | None = Field(None, max_length=3)
     start_date: date | None = None
     end_date: date | None = None
     status: str | None = Field(None, max_length=20)
@@ -79,6 +81,7 @@ class ContractResponse(BaseModel):
     created_by_id: int | None = None
     created_by_name: str | None = None    # Convenience: the creator's name
     value: float | None = None
+    currency: str = "USD"
     start_date: date | None = None
     end_date: date | None = None
     status: str
