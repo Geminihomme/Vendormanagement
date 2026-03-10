@@ -1,12 +1,19 @@
 # A Dockerfile is like a recipe for building a container.
 # It says: "start with Python, copy my code in, install dependencies, then run."
 
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install system dependencies needed for psycopg2 (PostgreSQL driver)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install pipenv and project dependencies
+COPY Pipfile Pipfile.lock ./
+RUN pip install --no-cache-dir pipenv && \
+    pipenv install --system --deploy
 
 COPY . .
 
