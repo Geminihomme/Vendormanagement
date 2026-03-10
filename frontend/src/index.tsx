@@ -14,6 +14,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css';  // Global styles -- must be imported here so they apply everywhere
 import App from './App';
 
 // Find the <div id="root"> in index.html and render our App inside it

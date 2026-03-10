@@ -13,23 +13,29 @@ an HTTP request to one of these URLs. The most common actions are:
 - DELETE = "Remove this data"      (like tearing out a page)
 
 THE ROUTES WE DEFINE:
-  GET    /api/vendors/        -> List all vendors
-  POST   /api/vendors/        -> Create a new vendor
-  GET    /api/vendors/{id}    -> Get one vendor by ID
-  PUT    /api/vendors/{id}    -> Update a vendor
-  DELETE /api/vendors/{id}    -> Delete a vendor
+  GET    /api/vendors/             -> List vendors (with search, filter, sort)
+  GET    /api/vendors/categories   -> Get all unique categories (for filter dropdown)
+  GET    /api/vendors/count        -> Count vendors matching filters
+  POST   /api/vendors/             -> Create a new vendor
+  GET    /api/vendors/{id}         -> Get one vendor by ID
+  PUT    /api/vendors/{id}         -> Update a vendor
+  DELETE /api/vendors/{id}         -> Delete a vendor
 
 HOW it fits in:
 This is the "front desk" of our backend. The frontend only talks to these
 routes. The routes delegate the real work to the service layer.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.vendor import VendorCreate, VendorUpdate, VendorResponse
 from app.services import vendor_service
+from app.services import approval_service
+from app.models.approval import ApprovalType
+from app.auth import get_current_user
+from app.models.user import User
 
 # A "router" groups related endpoints together.
 # All routes in this file will be prefixed with /api/vendors (set in main.py).
@@ -37,22 +43,68 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[VendorResponse])
-def list_vendors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_vendors(
+    skip: int = 0,
+    limit: int = 100,
+    search: str | None = Query(None, description="Search by name, email, description, category, or city"),
+    status: str | None = Query(None, description="Filter by status (active, pending, etc.)"),
+    category: str | None = Query(None, description="Filter by category"),
+    sort_by: str = Query("name", description="Sort by: name, email, category, status, created_at, updated_at"),
+    sort_order: str = Query("asc", description="Sort order: asc or desc"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
-    Get a list of all vendors.
+    Get a list of vendors with optional search, filtering, and sorting.
 
-    The 'Depends(get_db)' part is called "dependency injection" --
-    FastAPI automatically provides a database session to this function.
-    We don't have to create or manage it ourselves.
+    HOW QUERY PARAMETERS WORK:
+    The frontend adds filters to the URL:
+      GET /api/vendors/?search=acme&status=active&sort_by=name&sort_order=asc
 
-    Example: GET /api/vendors/?skip=0&limit=10
+    FastAPI reads each ?key=value pair and passes them as function arguments.
+
+    Example combinations:
+      /api/vendors/?search=IT                          -> search in name/email/description
+      /api/vendors/?status=active&category=IT Services -> active IT vendors only
+      /api/vendors/?sort_by=created_at&sort_order=desc -> newest vendors first
     """
-    vendors = vendor_service.get_vendors(db, skip=skip, limit=limit)
+    vendors = vendor_service.get_vendors(
+        db, skip=skip, limit=limit,
+        search=search, status=status, category=category,
+        sort_by=sort_by, sort_order=sort_order,
+    )
     return vendors
 
 
+@router.get("/categories", response_model=list[str])
+def get_vendor_categories(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Get all unique vendor categories.
+    Used to populate the category filter dropdown on the frontend.
+    Returns: ["IT Services", "Office Supplies", "Consulting", ...]
+    """
+    return vendor_service.get_vendor_categories(db)
+
+
+@router.get("/count")
+def get_vendor_count(
+    search: str | None = None,
+    status: str | None = None,
+    category: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get the count of vendors matching the current filters.
+    Used for "Showing X of Y vendors" without loading all data.
+    """
+    total = vendor_service.count_vendors(db)
+    filtered = vendor_service.count_vendors(db, search=search, status=status, category=category)
+    return {"total": total, "filtered": filtered}
+
+
 @router.post("/", response_model=VendorResponse, status_code=201)
-def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
+def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Create a new vendor.
 
@@ -67,12 +119,29 @@ def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
     If validation fails, it returns a 422 error with details.
 
     status_code=201 means "Created" -- tells the frontend it was successful.
+
+    APPROVAL WORKFLOW:
+    New vendors start with "pending" status. An approval request is
+    automatically created so a manager can review it. The vendor won't
+    become "approved" until a manager explicitly approves it.
+    Think of it as putting a "New Vendor Request" form in the inbox.
     """
-    return vendor_service.create_vendor(db, vendor)
+    new_vendor = vendor_service.create_vendor(db, vendor)
+
+    # Automatically create an approval request for the new vendor
+    approval_service.create_approval(
+        db,
+        approval_type=ApprovalType.VENDOR,
+        entity_id=new_vendor.id,
+        entity_title=new_vendor.name,
+        requested_by_id=current_user.id,
+    )
+
+    return new_vendor
 
 
 @router.get("/{vendor_id}", response_model=VendorResponse)
-def get_vendor(vendor_id: int, db: Session = Depends(get_db)):
+def get_vendor(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Get a single vendor by their ID.
 
@@ -92,6 +161,7 @@ def update_vendor(
     vendor_id: int,
     vendor_update: VendorUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Update an existing vendor.
@@ -106,7 +176,7 @@ def update_vendor(
 
 
 @router.delete("/{vendor_id}", status_code=204)
-def delete_vendor(vendor_id: int, db: Session = Depends(get_db)):
+def delete_vendor(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Delete a vendor.
 
